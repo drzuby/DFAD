@@ -42,24 +42,24 @@
         android:layout_marginTop="70dp" />
 
     <TextView
-        android:id="@+id/xGyro"
-        android:text="@string/x_gyro_label"
+        android:id="@+id/xPos"
+        android:text="@string/x_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
         android:layout_marginStart="160dp" />
 
     <TextView
-        android:id="@+id/yGyro"
-        android:text="@string/y_gyro_label"
+        android:id="@+id/yPos"
+        android:text="@string/y_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="50dp"
         android:layout_marginStart="160dp" />
 
     <TextView
-        android:id="@+id/zGyro"
-        android:text="@string/z_gyro_label"
+        android:id="@+id/zPos"
+        android:text="@string/z_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="70dp"

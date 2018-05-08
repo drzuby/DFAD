@@ -9,8 +9,8 @@
     <string name="x_acc_label">x: ???</string>
     <string name="y_acc_label">y: ???</string>
     <string name="z_acc_label">z: ???</string>
-    <string name="x_gyro_label">x: ???</string>
-    <string name="y_gyro_label">y: ???</string>
-    <string name="z_gyro_label">z: ???</string>
+    <string name="x_pos_label">x: ???</string>
+    <string name="y_pos_label">y: ???</string>
+    <string name="z_pos_label">z: ???</string>
 
 </resources>

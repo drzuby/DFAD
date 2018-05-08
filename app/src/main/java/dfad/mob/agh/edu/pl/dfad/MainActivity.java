@@ -43,6 +43,13 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private TextView yGyroTextView;
     private TextView zGyroTextView;
 
+    private final float[] mAccelerometerReading = new float[3];
+    private final float[] mMagnetometerReading = new float[3];
+
+    private final float[] mRotationMatrix = new float[9];
+    private final float[] mOrientationAngles = new float[3];
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,16 +58,16 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         xAccTextView = findViewById(R.id.xAcc);
         yAccTextView = findViewById(R.id.yAcc);
         zAccTextView = findViewById(R.id.zAcc);
-        xGyroTextView = findViewById(R.id.xGyro);
-        yGyroTextView = findViewById(R.id.yGyro);
-        zGyroTextView = findViewById(R.id.zGyro);
+        xGyroTextView = findViewById(R.id.xPos);
+        yGyroTextView = findViewById(R.id.yPos);
+        zGyroTextView = findViewById(R.id.zPos);
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
@@ -70,15 +77,31 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            System.arraycopy(event.values, 0, mAccelerometerReading,
+                    0, mAccelerometerReading.length);
             xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
             yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
             zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
+        } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            System.arraycopy(event.values, 0, mMagnetometerReading,
+                    0, mMagnetometerReading.length);
         }
-        if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            xGyroTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
-            yGyroTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
-            zGyroTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
-        }
+        updateOrientationAngles();
+    }
+
+    public void updateOrientationAngles() {
+        // Update rotation matrix, which is needed to update orientation angles.
+        SensorManager.getRotationMatrix(mRotationMatrix, null,
+                mAccelerometerReading, mMagnetometerReading);
+
+        // "mRotationMatrix" now has up-to-date information.
+
+        SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
+
+        // "mOrientationAngles" now has up-to-date information.
+        xGyroTextView.setText(String.format(Locale.ENGLISH, "x: %f", mOrientationAngles[0]));
+        yGyroTextView.setText(String.format(Locale.ENGLISH, "y: %f", mOrientationAngles[1]));
+        zGyroTextView.setText(String.format(Locale.ENGLISH, "z: %f", mOrientationAngles[2]));
     }
 
     @Override
