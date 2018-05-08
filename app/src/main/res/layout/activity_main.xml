@@ -14,4 +14,55 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <TextView
+        android:id="@+id/xAcc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/helloWorldTextView"
+        android:layout_marginTop="30dp"
+        android:text="@string/x_acc_label" />
+
+    <TextView
+        android:id="@+id/yAcc"
+        android:text="@string/y_acc_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/helloWorldTextView"
+        android:layout_marginTop="50dp" />
+
+    <TextView
+        android:id="@+id/zAcc"
+        android:text="@string/z_acc_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/helloWorldTextView"
+        android:layout_marginTop="70dp" />
+
+    <TextView
+        android:id="@+id/xGyro"
+        android:text="@string/x_gyro_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="160dp" />
+
+    <TextView
+        android:id="@+id/yGyro"
+        android:text="@string/y_gyro_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:layout_marginStart="160dp" />
+
+    <TextView
+        android:id="@+id/zGyro"
+        android:text="@string/z_gyro_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="70dp"
+        android:layout_marginStart="160dp" />
+
 </RelativeLayout>

@@ -6,5 +6,11 @@
     <string name="face_detected_message">I SEE YOUR FACE</string>
     <string name="face_detected_then_lost_message">HELLO? IS ANYBODY THERE?</string>
     <string name="error_with_face_detection">Face detection error</string>
+    <string name="x_acc_label">x: ???</string>
+    <string name="y_acc_label">y: ???</string>
+    <string name="z_acc_label">z: ???</string>
+    <string name="x_gyro_label">x: ???</string>
+    <string name="y_gyro_label">y: ???</string>
+    <string name="z_gyro_label">z: ???</string>
 
 </resources>

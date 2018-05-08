@@ -3,6 +3,10 @@ package dfad.mob.agh.edu.pl.dfad;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,6 +15,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
@@ -23,20 +28,57 @@ import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
  * <p/>
  * <uses-permission android:name="android.permission.CAMERA" />
  */
-public class MainActivity extends Activity implements FrontCameraRetriever.Listener, FaceDetectionCamera.Listener {
+public class MainActivity extends Activity implements FrontCameraRetriever.Listener, FaceDetectionCamera.Listener, SensorEventListener {
 
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
 
     private TextView helloWorldTextView;
+    private SensorManager sensorManager;
+
+    private TextView xAccTextView;
+    private TextView yAccTextView;
+    private TextView zAccTextView;
+
+    private TextView xGyroTextView;
+    private TextView yGyroTextView;
+    private TextView zGyroTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        helloWorldTextView = (TextView) findViewById(R.id.helloWorldTextView);
+        helloWorldTextView = findViewById(R.id.helloWorldTextView);
+        xAccTextView = findViewById(R.id.xAcc);
+        yAccTextView = findViewById(R.id.yAcc);
+        zAccTextView = findViewById(R.id.zAcc);
+        xGyroTextView = findViewById(R.id.xGyro);
+        yGyroTextView = findViewById(R.id.yGyro);
+        zGyroTextView = findViewById(R.id.zGyro);
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor arg0, int arg1) {
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
+            yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
+            zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
+        }
+        if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+            xGyroTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
+            yGyroTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
+            zGyroTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
+        }
     }
 
     @Override
