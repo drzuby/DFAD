@@ -15,12 +15,31 @@
         android:layout_height="wrap_content" />
 
     <TextView
-        android:id="@+id/xAcc"
+        android:id="@+id/leftEye"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignStart="@+id/helloWorldTextView"
         android:layout_marginTop="30dp"
+        android:text="@string/default_eye_label" />
+
+    <TextView
+        android:id="@+id/rightEye"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/helloWorldTextView"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="160dp"
+        android:text="@string/default_eye_label" />
+
+    <TextView
+        android:id="@+id/xAcc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/helloWorldTextView"
+        android:layout_marginTop="60dp"
         android:text="@string/x_acc_label" />
 
     <TextView
@@ -30,7 +49,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="50dp" />
+        android:layout_marginTop="80dp" />
 
     <TextView
         android:id="@+id/zAcc"
@@ -39,14 +58,14 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="70dp" />
+        android:layout_marginTop="100dp" />
 
     <TextView
         android:id="@+id/xPos"
         android:text="@string/x_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="60dp"
         android:layout_marginStart="160dp" />
 
     <TextView
@@ -54,7 +73,7 @@
         android:text="@string/y_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="80dp"
         android:layout_marginStart="160dp" />
 
     <TextView
@@ -62,7 +81,7 @@
         android:text="@string/z_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="100dp"
         android:layout_marginStart="160dp" />
 
 </RelativeLayout>

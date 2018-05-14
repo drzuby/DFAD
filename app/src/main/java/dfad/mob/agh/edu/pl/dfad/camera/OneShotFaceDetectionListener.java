@@ -2,10 +2,12 @@ package dfad.mob.agh.edu.pl.dfad.camera;
 
 import android.hardware.Camera;
 
+import com.google.android.gms.vision.Tracker;
+
 /**
  * Manage the android face detection callbacks to be more ON, OFF than real time ON ON ON ON OFF
  */
-public class OneShotFaceDetectionListener implements Camera.FaceDetectionListener {
+public class OneShotFaceDetectionListener extends Tracker implements Camera.FaceDetectionListener {
 
     private static final int UPDATE_SPEED = 100;
     private static final int UPDATE_SPEED_UNITS = 1000;
@@ -64,11 +66,5 @@ public class OneShotFaceDetectionListener implements Camera.FaceDetectionListene
 
     private void completeFaceDetectionSession() {
         timerComplete = true;
-    }
-
-    interface Listener {
-        void onFaceDetected();
-
-        void onFaceTimedOut();
     }
 }

@@ -9,10 +9,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +34,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     private TextView helloWorldTextView;
     private SensorManager sensorManager;
+
+    private TextView leftEyeTextView;
+    private TextView rightEyeTextView;
 
     private TextView xAccTextView;
     private TextView yAccTextView;
@@ -61,6 +64,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         xGyroTextView = findViewById(R.id.xPos);
         yGyroTextView = findViewById(R.id.yPos);
         zGyroTextView = findViewById(R.id.zPos);
+        leftEyeTextView = findViewById(R.id.leftEye);
+        rightEyeTextView = findViewById(R.id.rightEye);
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
@@ -108,7 +113,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     public void onLoaded(FaceDetectionCamera camera) {
         // When the front facing camera has been retrieved
         // then initialise it i.e turn face detection on
-        camera.initialise(this);
+
+        try {
+            camera.initialise(this, getApplicationContext());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // If you wanted to show a preview of what the camera can see
         // here is where you would do it
     }
@@ -125,12 +135,24 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onFaceDetected() {
-        helloWorldTextView.setText(R.string.face_detected_message);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                helloWorldTextView.setText(R.string.face_detected_message);
+            }
+        });
     }
 
     @Override
     public void onFaceTimedOut() {
-        helloWorldTextView.setText(R.string.face_detected_then_lost_message);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                helloWorldTextView.setText(R.string.face_detected_then_lost_message);
+                leftEyeTextView.setText(R.string.default_eye_label);
+                rightEyeTextView.setText(R.string.default_eye_label);
+            }
+        });
     }
 
     @Override
@@ -140,6 +162,36 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         // Something went wrong in the Android api
         // or our app or another app failed to release the camera properly
         helloWorldTextView.setText(R.string.error_with_face_detection);
+    }
+
+    @Override
+    public void onLeftEyeChanged(final boolean isOpen) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(isOpen) {
+                    leftEyeTextView.setText(R.string.left_eye_open);
+                }
+                else {
+                    leftEyeTextView.setText(R.string.left_eye_closed);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onRightEyeChanged(final boolean isOpen) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(isOpen) {
+                    rightEyeTextView.setText(R.string.right_eye_open);
+                }
+                else {
+                    rightEyeTextView.setText(R.string.right_eye_closed);
+                }
+            }
+        });
     }
 
     //https://stackoverflow.com/questions/37458157/error-failed-to-connect-to-camera-service-android-marshmallow
@@ -159,28 +211,6 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             }
             if (!permissions.isEmpty()) {
                 requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 111: {
-                for (int i = 0; i < permissions.length; i++) {
-                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        System.out.println("Permissions --> " + "Permission Granted: " + permissions[i]);
-
-
-                    } else if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                        System.out.println("Permissions --> " + "Permission Denied: " + permissions[i]);
-
-                    }
-                }
-            }
-            break;
-            default: {
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
             }
         }
     }
