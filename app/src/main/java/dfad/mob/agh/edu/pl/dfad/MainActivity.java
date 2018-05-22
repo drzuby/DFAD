@@ -9,13 +9,21 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.bosphere.filelogger.FL;
+import com.bosphere.filelogger.FLConfig;
+import com.bosphere.filelogger.FLConst;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
@@ -66,11 +74,19 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         zGyroTextView = findViewById(R.id.zPos);
         leftEyeTextView = findViewById(R.id.leftEye);
         rightEyeTextView = findViewById(R.id.rightEye);
+
+        FL.init(new FLConfig.Builder(this)
+                .minLevel(FLConst.Level.V)
+                .logToFile(true)
+                .dir(new File(Environment.getExternalStorageDirectory(), "DFAD"))
+                .retentionPolicy(FLConst.RetentionPolicy.FILE_COUNT)
+                .build());
+        FL.setEnabled(true);
+
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
     }
@@ -87,6 +103,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
             yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
             zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
+            FL.d("%f\t%f\t%f", event.values[0], event.values[1], event.values[2]);
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, mMagnetometerReading,
                     0, mMagnetometerReading.length);
@@ -169,10 +186,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(isOpen) {
+                if (isOpen) {
                     leftEyeTextView.setText(R.string.left_eye_open);
-                }
-                else {
+                } else {
                     leftEyeTextView.setText(R.string.left_eye_closed);
                 }
             }
@@ -184,10 +200,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(isOpen) {
+                if (isOpen) {
                     rightEyeTextView.setText(R.string.right_eye_open);
-                }
-                else {
+                } else {
                     rightEyeTextView.setText(R.string.right_eye_closed);
                 }
             }
@@ -200,15 +215,21 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         super.onStart();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            int hasCameraPermission = checkSelfPermission(Manifest.permission.CAMERA);
-
             List<String> permissions = new ArrayList<>();
+            int hasCameraPermission = checkSelfPermission(Manifest.permission.CAMERA);
+            int hasWriteExternalStoragePermission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int hasReadExternalStoragePermission = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
 
             if (hasCameraPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.CAMERA);
-
             }
+            if (hasWriteExternalStoragePermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
+            if (hasReadExternalStoragePermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+
             if (!permissions.isEmpty()) {
                 requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
             }
