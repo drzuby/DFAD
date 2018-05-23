@@ -103,12 +103,14 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
             yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
             zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
-            FL.d("%f\t%f\t%f", event.values[0], event.values[1], event.values[2]);
+            FL.d("acc\t%f\t%f\t%f", event.values[0], event.values[1], event.values[2]);
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, mMagnetometerReading,
                     0, mMagnetometerReading.length);
         }
         updateOrientationAngles();
+        FL.d("pos\t%f\t%f\t%f", mOrientationAngles[0], mOrientationAngles[1], mOrientationAngles[2]);
+
     }
 
     public void updateOrientationAngles() {
