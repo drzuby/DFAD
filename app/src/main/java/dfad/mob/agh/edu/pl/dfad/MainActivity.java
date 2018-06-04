@@ -2,6 +2,7 @@ package dfad.mob.agh.edu.pl.dfad;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -11,6 +12,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.bosphere.filelogger.FL;
@@ -27,6 +30,7 @@ import java.util.logging.Logger;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
+import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
 
 /**
  * Don't forget to add the permissions to the AndroidManifest.xml!
@@ -54,6 +58,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private TextView yGyroTextView;
     private TextView zGyroTextView;
 
+    private Button barkButton;
+
     private final float[] mAccelerometerReading = new float[3];
     private final float[] mMagnetometerReading = new float[3];
 
@@ -74,6 +80,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         zGyroTextView = findViewById(R.id.zPos);
         leftEyeTextView = findViewById(R.id.leftEye);
         rightEyeTextView = findViewById(R.id.rightEye);
+        barkButton = findViewById(R.id.barkButton);
 
         FL.init(new FLConfig.Builder(this)
                 .minLevel(FLConst.Level.V)
@@ -83,12 +90,25 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
                 .build());
         FL.setEnabled(true);
 
+        barkButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runSoundNotification();
+            }
+        });
+
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void runSoundNotification() {
+        Intent soundNotificationIntent = new Intent(this, SoundNotificationService.class);
+        soundNotificationIntent.setAction(SoundNotificationService.ACTION_PLAY);
+        startService(soundNotificationIntent);
     }
 
     @Override
@@ -221,6 +241,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             int hasCameraPermission = checkSelfPermission(Manifest.permission.CAMERA);
             int hasWriteExternalStoragePermission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             int hasReadExternalStoragePermission = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
+            int hasWakeLockPermission = checkSelfPermission(Manifest.permission.WAKE_LOCK);
 
             if (hasCameraPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.CAMERA);
@@ -230,6 +251,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             }
             if (hasReadExternalStoragePermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+            if (hasWakeLockPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.WAKE_LOCK);
             }
 
             if (!permissions.isEmpty()) {
