@@ -8,6 +8,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,8 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
@@ -44,7 +43,6 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
 
-    private TextView helloWorldTextView;
     private SensorManager sensorManager;
 
     private TextView leftEyeTextView;
@@ -54,30 +52,58 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private TextView yAccTextView;
     private TextView zAccTextView;
 
-    private TextView xGyroTextView;
-    private TextView yGyroTextView;
-    private TextView zGyroTextView;
+    private TextView xGraTextView;
+    private TextView yGraTextView;
+    private TextView zGraTextView;
 
+    private TextView xMagTextView;
+    private TextView yMagTextView;
+    private TextView zMagTextView;
+
+    private TextView xPosTextView;
+    private TextView yPosTextView;
+    private TextView zPosTextView;
+
+    private TextView xResTextView;
+    private TextView yResTextView;
+    private TextView zResTextView;
+
+    private TextView cameraTextView;
     private Button barkButton;
 
-    private final float[] mAccelerometerReading = new float[3];
-    private final float[] mMagnetometerReading = new float[3];
+    private final float[] accelerometerReading = new float[4];
+    private final float[] magnetometerReading = new float[3];
+    private final float[] gravityReading = new float[3];
 
-    private final float[] mRotationMatrix = new float[9];
-    private final float[] mOrientationAngles = new float[3];
-
+    private final float[] rotationMatrix = new float[16];
+    private final float[] invertedRotationMatrix = new float[16];
+    private final float[] orientationAngles = new float[3];
+    private final float[] trueAcceleration = new float[4];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        helloWorldTextView = findViewById(R.id.helloWorldTextView);
+        cameraTextView = findViewById(R.id.cameraTextView);
         xAccTextView = findViewById(R.id.xAcc);
         yAccTextView = findViewById(R.id.yAcc);
         zAccTextView = findViewById(R.id.zAcc);
-        xGyroTextView = findViewById(R.id.xPos);
-        yGyroTextView = findViewById(R.id.yPos);
-        zGyroTextView = findViewById(R.id.zPos);
+
+        xGraTextView = findViewById(R.id.xGra);
+        yGraTextView = findViewById(R.id.yGra);
+        zGraTextView = findViewById(R.id.zGra);
+
+        xMagTextView = findViewById(R.id.xMag);
+        yMagTextView = findViewById(R.id.yMag);
+        zMagTextView = findViewById(R.id.zMag);
+
+        xPosTextView = findViewById(R.id.xPos);
+        yPosTextView = findViewById(R.id.yPos);
+        zPosTextView = findViewById(R.id.zPos);
+
+        xResTextView = findViewById(R.id.xRes);
+        yResTextView = findViewById(R.id.yRes);
+        zResTextView = findViewById(R.id.zRes);
         leftEyeTextView = findViewById(R.id.leftEye);
         rightEyeTextView = findViewById(R.id.rightEye);
         barkButton = findViewById(R.id.barkButton);
@@ -101,8 +127,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     private void runSoundNotification() {
@@ -117,35 +144,43 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            System.arraycopy(event.values, 0, mAccelerometerReading,
-                    0, mAccelerometerReading.length);
+        if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+            System.arraycopy(event.values, 0, accelerometerReading,
+                    0, 3);
             xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
             yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
             zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
-            FL.d("acc\t%f\t%f\t%f", event.values[0], event.values[1], event.values[2]);
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-            System.arraycopy(event.values, 0, mMagnetometerReading,
-                    0, mMagnetometerReading.length);
+            System.arraycopy(event.values, 0, magnetometerReading,
+                    0, magnetometerReading.length);
+            xMagTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
+            yMagTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
+            zMagTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
+        } else if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
+            System.arraycopy(event.values, 0, gravityReading,
+                    0, gravityReading.length);
+            xGraTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
+            yGraTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
+            zGraTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
         }
-        updateOrientationAngles();
-        FL.d("pos\t%f\t%f\t%f", mOrientationAngles[0], mOrientationAngles[1], mOrientationAngles[2]);
-
+        updateTrueAcceleration();
     }
 
-    public void updateOrientationAngles() {
-        // Update rotation matrix, which is needed to update orientation angles.
-        SensorManager.getRotationMatrix(mRotationMatrix, null,
-                mAccelerometerReading, mMagnetometerReading);
+    public void updateTrueAcceleration() {
+        SensorManager.getRotationMatrix(rotationMatrix, null, gravityReading, magnetometerReading);
+        SensorManager.getOrientation(rotationMatrix, orientationAngles);
+        Matrix.invertM(invertedRotationMatrix, 0, rotationMatrix, 0);
+        Matrix.multiplyMV(trueAcceleration, 0, invertedRotationMatrix, 0, accelerometerReading, 0);
 
-        // "mRotationMatrix" now has up-to-date information.
+        xPosTextView.setText(String.format(Locale.ENGLISH, "x: %f", orientationAngles[0]));
+        yPosTextView.setText(String.format(Locale.ENGLISH, "y: %f", orientationAngles[1]));
+        zPosTextView.setText(String.format(Locale.ENGLISH, "z: %f", orientationAngles[2]));
 
-        SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
+        xResTextView.setText(String.format(Locale.ENGLISH, "x: %f", trueAcceleration[0]));
+        yResTextView.setText(String.format(Locale.ENGLISH, "y: %f", trueAcceleration[1]));
+        zResTextView.setText(String.format(Locale.ENGLISH, "z: %f", trueAcceleration[2]));
 
-        // "mOrientationAngles" now has up-to-date information.
-        xGyroTextView.setText(String.format(Locale.ENGLISH, "x: %f", mOrientationAngles[0]));
-        yGyroTextView.setText(String.format(Locale.ENGLISH, "y: %f", mOrientationAngles[1]));
-        zGyroTextView.setText(String.format(Locale.ENGLISH, "z: %f", mOrientationAngles[2]));
+        FL.d("%f\t%f\t%f", trueAcceleration[0], trueAcceleration[1], trueAcceleration[2]);
     }
 
     @Override
@@ -169,7 +204,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         // or another app is using the camera
         // or our app or another app failed to release the camera properly
         Log.wtf(TAG, "Failed to load camera, what went wrong?");
-        helloWorldTextView.setText(R.string.error_with_face_detection);
+        cameraTextView.setText(R.string.error_with_face_detection);
     }
 
     @Override
@@ -177,7 +212,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                helloWorldTextView.setText(R.string.face_detected_message);
+                cameraTextView.setText(R.string.face_detected_message);
             }
         });
     }
@@ -187,7 +222,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                helloWorldTextView.setText(R.string.face_detected_then_lost_message);
+                cameraTextView.setText(R.string.face_detected_then_lost_message);
                 leftEyeTextView.setText(R.string.default_eye_label);
                 rightEyeTextView.setText(R.string.default_eye_label);
             }
@@ -200,7 +235,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         // Face detection not supported on this device
         // Something went wrong in the Android api
         // or our app or another app failed to release the camera properly
-        helloWorldTextView.setText(R.string.error_with_face_detection);
+        cameraTextView.setText(R.string.error_with_face_detection);
     }
 
     @Override

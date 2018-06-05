@@ -2,25 +2,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context=".MainActivity">
-
-    <TextView
-        android:id="@+id/helloWorldTextView"
-        android:text="@string/hello_world"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/leftEye"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="30dp"
         android:text="@string/default_eye_label" />
 
     <TextView
@@ -28,61 +20,180 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="30dp"
         android:layout_marginStart="160dp"
         android:text="@string/default_eye_label" />
+
+    <TextView
+        android:id="@+id/accLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="30dp"
+        android:text="@string/acc_label" />
 
     <TextView
         android:id="@+id/xAcc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/helloWorldTextView"
         android:layout_marginTop="60dp"
-        android:text="@string/x_acc_label" />
+        android:text="@string/x_label" />
 
     <TextView
         android:id="@+id/yAcc"
-        android:text="@string/y_acc_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="80dp" />
+        android:layout_marginTop="80dp"
+        android:text="@string/y_label" />
 
     <TextView
         android:id="@+id/zAcc"
-        android:text="@string/z_acc_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/helloWorldTextView"
-        android:layout_marginTop="100dp" />
+        android:layout_marginTop="100dp"
+        android:text="@string/z_label" />
+
+    <TextView
+        android:id="@+id/graLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="30dp"
+        android:text="@string/gra_label" />
+
+    <TextView
+        android:id="@+id/xGra"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="60dp"
+        android:text="@string/x_label" />
+
+    <TextView
+        android:id="@+id/yGra"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="80dp"
+        android:text="@string/y_label" />
+
+    <TextView
+        android:id="@+id/zGra"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="100dp"
+        android:text="@string/z_label" />
+
+    <TextView
+        android:id="@+id/magLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="130dp"
+        android:text="@string/mag_label" />
+
+    <TextView
+        android:id="@+id/xMag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="160dp"
+        android:text="@string/x_label" />
+
+    <TextView
+        android:id="@+id/yMag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="180dp"
+        android:text="@string/y_label" />
+
+    <TextView
+        android:id="@+id/zMag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="200dp"
+        android:text="@string/z_label" />
+
+    <TextView
+        android:id="@+id/posLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="130dp"
+        android:text="@string/pos_label" />
 
     <TextView
         android:id="@+id/xPos"
-        android:text="@string/x_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
-        android:layout_marginStart="160dp" />
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="160dp"
+        android:text="@string/x_label" />
 
     <TextView
         android:id="@+id/yPos"
-        android:text="@string/y_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
-        android:layout_marginStart="160dp" />
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="180dp"
+        android:text="@string/y_label" />
 
     <TextView
         android:id="@+id/zPos"
-        android:text="@string/z_pos_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
-        android:layout_marginStart="160dp" />
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="200dp"
+        android:text="@string/z_label" />
+
+    <TextView
+        android:id="@+id/resLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="230dp"
+        android:text="@string/res_label" />
+
+    <TextView
+        android:id="@+id/xRes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="260dp"
+        android:text="@string/x_label" />
+
+    <TextView
+        android:id="@+id/yRes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="280dp"
+        android:text="@string/y_label" />
+
+    <TextView
+        android:id="@+id/zRes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="300dp"
+        android:text="@string/z_label" />
+
+
+    <TextView
+        android:id="@+id/cameraTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="90dp"
+        android:text="@string/hello_world" />
 
     <Button
         android:id="@+id/barkButton"
@@ -91,6 +202,6 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="35dp"
-        android:text="Bark!" />
+        android:text="@string/bark_button_label" />
 
 </RelativeLayout>
