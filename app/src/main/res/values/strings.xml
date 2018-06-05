@@ -20,5 +20,6 @@
     <string name="right_eye_closed">Right eye closed!</string>
     <string name="res_label">True acceleration</string>
     <string name="bark_button_label">Bark!</string>
+    <string name="keep_screen_on">Keep screen on</string>
 
 </resources>

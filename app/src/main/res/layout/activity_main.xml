@@ -185,6 +185,15 @@
         android:layout_marginTop="300dp"
         android:text="@string/z_label" />
 
+    <CheckBox
+        android:id="@+id/keepScreenOn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="120dp"
+        android:checked="false"
+        android:text="@string/keep_screen_on" />
 
     <TextView
         android:id="@+id/cameraTextView"

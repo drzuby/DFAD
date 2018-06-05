@@ -12,9 +12,13 @@ import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.media.MediaBrowserCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.bosphere.filelogger.FL;
@@ -68,6 +72,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private TextView yResTextView;
     private TextView zResTextView;
 
+    private CheckBox keepScreenOnCheckBox;
     private TextView cameraTextView;
     private Button barkButton;
 
@@ -84,7 +89,46 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        cameraTextView = findViewById(R.id.cameraTextView);
+        assignWidgets();
+
+        FL.init(new FLConfig.Builder(this)
+                .minLevel(FLConst.Level.V)
+                .logToFile(true)
+                .dir(new File(Environment.getExternalStorageDirectory(), "DFAD"))
+                .retentionPolicy(FLConst.RetentionPolicy.FILE_COUNT)
+                .build());
+        FL.setEnabled(true);
+
+        keepScreenOnCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                } else {
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+            }
+        });
+        barkButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runSoundNotification();
+            }
+        });
+
+        // Go get the front facing camera of the device
+        // best practice is to do this asynchronously
+        FrontCameraRetriever.retrieveFor(this);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void assignWidgets() {
+        leftEyeTextView = findViewById(R.id.leftEye);
+        rightEyeTextView = findViewById(R.id.rightEye);
+
         xAccTextView = findViewById(R.id.xAcc);
         yAccTextView = findViewById(R.id.yAcc);
         zAccTextView = findViewById(R.id.zAcc);
@@ -104,32 +148,10 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         xResTextView = findViewById(R.id.xRes);
         yResTextView = findViewById(R.id.yRes);
         zResTextView = findViewById(R.id.zRes);
-        leftEyeTextView = findViewById(R.id.leftEye);
-        rightEyeTextView = findViewById(R.id.rightEye);
+
+        keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
+        cameraTextView = findViewById(R.id.cameraTextView);
         barkButton = findViewById(R.id.barkButton);
-
-        FL.init(new FLConfig.Builder(this)
-                .minLevel(FLConst.Level.V)
-                .logToFile(true)
-                .dir(new File(Environment.getExternalStorageDirectory(), "DFAD"))
-                .retentionPolicy(FLConst.RetentionPolicy.FILE_COUNT)
-                .build());
-        FL.setEnabled(true);
-
-        barkButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runSoundNotification();
-            }
-        });
-
-        // Go get the front facing camera of the device
-        // best practice is to do this asynchronously
-        FrontCameraRetriever.retrieveFor(this);
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     private void runSoundNotification() {
