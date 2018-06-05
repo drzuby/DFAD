@@ -16,6 +16,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 dependencies {
@@ -26,6 +30,8 @@ dependencies {
     implementation 'com.android.support:support-v4:27.1.1'
     implementation 'com.google.android.gms:play-services-vision:15.0.2'
     implementation 'com.github.bosphere.android-filelogger:filelogger:1.0.5'
+//    implementation group: 'nz.ac.waikato.cms.weka', name: 'LibSVM', version: '1.0.10'
+
 
     testImplementation 'junit:junit:4.12'
 

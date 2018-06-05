@@ -33,6 +33,10 @@
             android:name=".notification.SoundNotificationService"
             android:enabled="true"
             android:exported="true" />
+        <service
+            android:name=".detector.DriverPatternDetectorService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>
