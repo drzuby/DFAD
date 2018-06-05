@@ -7,6 +7,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
 
+import com.bosphere.filelogger.FL;
+
 import java.util.Objects;
 
 import dfad.mob.agh.edu.pl.dfad.R;
@@ -28,12 +30,12 @@ public class SoundNotificationService extends Service implements MediaPlayer.OnP
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (Objects.requireNonNull(intent.getAction()).equals(ACTION_PLAY)) {
-        mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.example_sound2);
-        mMediaPlayer.setOnPreparedListener(this);
-        mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-//        mMediaPlayer.prepareAsync(); // TODO: check whether it is proper to call static create method. Maybe the better solution is to create new object and call prepareAsync.
+            mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.example_sound2);
+            mMediaPlayer.setOnPreparedListener(this);
+            mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+//            mMediaPlayer.prepareAsync(); // TODO: check whether it is proper to call static create method. Maybe the better solution is to create new object and call prepareAsync.
         }
-        return super.onStartCommand(intent, flags, startId);
+        return Service.START_NOT_STICKY;
     }
 
     @Override
