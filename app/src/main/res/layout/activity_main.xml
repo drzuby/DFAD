@@ -185,6 +185,38 @@
         android:layout_marginTop="300dp"
         android:text="@string/z_label" />
 
+    <TextView
+        android:id="@+id/smsMmsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="260dp"
+        android:text="@string/sms_mms_messages" />
+
+    <TextView
+        android:id="@+id/smsMms"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="250dp"
+        android:layout_marginTop="260dp"
+        android:text="@string/default_amount" />
+
+    <TextView
+        android:id="@+id/callsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="280dp"
+        android:text="@string/calls_label" />
+
+    <TextView
+        android:id="@+id/calls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="250dp"
+        android:layout_marginTop="280dp"
+        android:text="@string/default_amount" />
+
     <CheckBox
         android:id="@+id/keepScreenOn"
         android:layout_width="wrap_content"

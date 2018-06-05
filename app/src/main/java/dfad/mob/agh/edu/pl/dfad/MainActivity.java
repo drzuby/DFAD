@@ -3,6 +3,7 @@ package dfad.mob.agh.edu.pl.dfad;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -12,7 +13,7 @@ import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.media.MediaBrowserCompat;
+import android.provider.Telephony;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -33,6 +34,7 @@ import java.util.Locale;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
+import dfad.mob.agh.edu.pl.dfad.gsm.SmsMmsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
 
 /**
@@ -48,6 +50,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
 
     private SensorManager sensorManager;
+    private SmsMmsBroadcastReceiver smsMmsBroadcastReceiver;
 
     private TextView leftEyeTextView;
     private TextView rightEyeTextView;
@@ -75,6 +78,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private CheckBox keepScreenOnCheckBox;
     private TextView cameraTextView;
     private Button barkButton;
+
+    private TextView smsMmsTextView;
+    private TextView callsTextView;
+
+    private int smsMmsAmount;
+    private int callsAmount;
 
     private final float[] accelerometerReading = new float[4];
     private final float[] magnetometerReading = new float[3];
@@ -116,6 +125,22 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             }
         });
 
+        smsMmsBroadcastReceiver = new SmsMmsBroadcastReceiver();
+        registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
+        registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION));
+        smsMmsBroadcastReceiver.setSmsListener(new SmsMmsBroadcastReceiver.SmsListener() {
+            @Override
+            public void onTextReceived(String sender, String body) {
+                smsMmsTextView.setText(String.valueOf(++smsMmsAmount));
+            }
+        });
+        smsMmsBroadcastReceiver.setMmsListener(new SmsMmsBroadcastReceiver.MmsListener() {
+            @Override
+            public void onMediaReceived(String sender) {
+                smsMmsTextView.setText(String.valueOf(++smsMmsAmount));
+            }
+        });
+
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
@@ -152,6 +177,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
         cameraTextView = findViewById(R.id.cameraTextView);
         barkButton = findViewById(R.id.barkButton);
+
+        smsMmsTextView = findViewById(R.id.smsMms);
+        callsTextView = findViewById(R.id.calls);
     }
 
     private void runSoundNotification() {
@@ -299,6 +327,10 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             int hasWriteExternalStoragePermission = checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             int hasReadExternalStoragePermission = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
             int hasWakeLockPermission = checkSelfPermission(Manifest.permission.WAKE_LOCK);
+            int hasReadSmsPermission = checkSelfPermission(Manifest.permission.READ_SMS);
+            int hasReceiveSmsPermission = checkSelfPermission(Manifest.permission.RECEIVE_SMS);
+            int hasReceiveMmsPermission = checkSelfPermission(Manifest.permission.RECEIVE_MMS);
+            int hasReceiveWapPushPermission = checkSelfPermission(Manifest.permission.RECEIVE_WAP_PUSH);
 
             if (hasCameraPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.CAMERA);
@@ -312,10 +344,28 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             if (hasWakeLockPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.WAKE_LOCK);
             }
+            if (hasReadSmsPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.READ_SMS);
+            }
+            if (hasReceiveSmsPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.RECEIVE_SMS);
+            }
+            if (hasReceiveMmsPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.RECEIVE_MMS);
+            }
+            if (hasReceiveWapPushPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.RECEIVE_WAP_PUSH);
+            }
 
             if (!permissions.isEmpty()) {
                 requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
             }
         }
+    }
+
+    @Override
+    public void onStop() {
+        unregisterReceiver(smsMmsBroadcastReceiver);
+        super.onStop();
     }
 }

@@ -21,5 +21,8 @@
     <string name="res_label">True acceleration</string>
     <string name="bark_button_label">Bark!</string>
     <string name="keep_screen_on">Keep screen on</string>
+    <string name="sms_mms_messages">SMS/MMS:</string>
+    <string name="default_amount">0</string>
+    <string name="calls_label">Calls:</string>
 
 </resources>
