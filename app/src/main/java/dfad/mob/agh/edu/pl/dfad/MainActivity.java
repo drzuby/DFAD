@@ -36,6 +36,7 @@ import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
 import dfad.mob.agh.edu.pl.dfad.gsm.SmsMmsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
+import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
 
 /**
  * Don't forget to add the permissions to the AndroidManifest.xml!
@@ -78,6 +79,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private CheckBox keepScreenOnCheckBox;
     private TextView cameraTextView;
     private Button barkButton;
+    private Button visualizerButton;
 
     private TextView smsMmsTextView;
     private TextView callsTextView;
@@ -125,6 +127,13 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             }
         });
 
+        visualizerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showVisualizer();
+            }
+        });
+
         smsMmsBroadcastReceiver = new SmsMmsBroadcastReceiver();
         registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
         registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION));
@@ -148,6 +157,11 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void showVisualizer() {
+        Intent visualizerIntent = new Intent(this, ActionVisualizer.class);
+        startActivity(visualizerIntent);
     }
 
     private void assignWidgets() {
@@ -177,6 +191,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
         cameraTextView = findViewById(R.id.cameraTextView);
         barkButton = findViewById(R.id.barkButton);
+        visualizerButton = findViewById(R.id.visualizerButton);
 
         smsMmsTextView = findViewById(R.id.smsMms);
         callsTextView = findViewById(R.id.calls);

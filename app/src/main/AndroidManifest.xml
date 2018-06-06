@@ -36,7 +36,9 @@
         <service
             android:name=".detector.DriverPatternDetectorService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity android:name=".visualization.ActionVisualizer"></activity>
     </application>
 
 </manifest>
