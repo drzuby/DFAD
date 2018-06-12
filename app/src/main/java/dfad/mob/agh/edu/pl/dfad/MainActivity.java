@@ -141,6 +141,10 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     }
 
     private void registerSmsMmsBroadcastReceiver() {
+        try {
+            unregisterReceiver(smsMmsBroadcastReceiver);
+        } catch (Exception ignored) {
+        }
         smsMmsBroadcastReceiver = new SmsMmsBroadcastReceiver();
         IntentFilter smsMmsIntentFilter = new IntentFilter();
         smsMmsIntentFilter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
@@ -151,6 +155,10 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     }
 
     private void registerCallsBroadcastReceiver() {
+        try {
+            unregisterReceiver(callsBroadcastReceiver);
+        } catch (Exception ignored) {
+        }
         callsBroadcastReceiver = new CallsBroadcastReceiver();
         IntentFilter callsIntentFilter = new IntentFilter();
         callsIntentFilter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
@@ -182,6 +190,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             @Override
             public void onMissedCall() {
                 missedCallsTextView.setText(String.valueOf(++missedCallsAmount));
+                incomingCallsTextView.setText(String.valueOf(--incomingCallsAmount));
+                incomingCallsTextView.setTextColor(Color.BLACK);
             }
         });
     }
@@ -410,11 +420,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onStop() {
-        try {
-            unregisterReceiver(smsMmsBroadcastReceiver);
-            unregisterReceiver(callsBroadcastReceiver);
-        } catch (IllegalArgumentException ignored) {
-        }
+        unregisterReceiver(smsMmsBroadcastReceiver);
+        unregisterReceiver(callsBroadcastReceiver);
         super.onStop();
     }
 }
