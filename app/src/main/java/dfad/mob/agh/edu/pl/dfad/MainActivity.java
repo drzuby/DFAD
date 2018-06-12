@@ -413,7 +413,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         try {
             unregisterReceiver(smsMmsBroadcastReceiver);
             unregisterReceiver(callsBroadcastReceiver);
-        } catch (IllegalArgumentException ignored) {}
+        } catch (IllegalArgumentException ignored) {
+        }
         super.onStop();
     }
 }
