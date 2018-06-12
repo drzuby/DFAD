@@ -127,6 +127,20 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
         visualizerButton.setOnClickListener(v -> showVisualizer());
 
+        registerSmsMmsBroadcastReceiver();
+
+        registerCallsBroadcastReceiver();
+
+        // Go get the front facing camera of the device
+        // best practice is to do this asynchronously
+        FrontCameraRetriever.retrieveFor(this);
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void registerSmsMmsBroadcastReceiver() {
         smsMmsBroadcastReceiver = new SmsMmsBroadcastReceiver();
         IntentFilter smsMmsIntentFilter = new IntentFilter();
         smsMmsIntentFilter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
@@ -134,7 +148,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         registerReceiver(smsMmsBroadcastReceiver, smsMmsIntentFilter);
         smsMmsBroadcastReceiver.setSmsListener((sender, body) -> smsMmsTextView.setText(String.valueOf(++smsMmsAmount)));
         smsMmsBroadcastReceiver.setMmsListener(sender -> smsMmsTextView.setText(String.valueOf(++smsMmsAmount)));
+    }
 
+    private void registerCallsBroadcastReceiver() {
         callsBroadcastReceiver = new CallsBroadcastReceiver();
         IntentFilter callsIntentFilter = new IntentFilter();
         callsIntentFilter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
@@ -168,14 +184,6 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
                 missedCallsTextView.setText(String.valueOf(++missedCallsAmount));
             }
         });
-
-        // Go get the front facing camera of the device
-        // best practice is to do this asynchronously
-        FrontCameraRetriever.retrieveFor(this);
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     private void showVisualizer() {
@@ -391,6 +399,13 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
                 requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
             }
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerSmsMmsBroadcastReceiver();
+        registerCallsBroadcastReceiver();
     }
 
     @Override
