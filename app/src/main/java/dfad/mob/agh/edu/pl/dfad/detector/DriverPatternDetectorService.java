@@ -27,6 +27,9 @@ public class DriverPatternDetectorService extends Service {
     public static final String X_ATTRIBUTE_NAME = "xTrueAcceleration";
     public static final String Y_ATTRIBUTE_NAME = "yTrueAcceleration";
     public static final String Z_ATTRIBUTE_NAME = "zTrueAcceleration";
+    private static final double BASE_THRESHOLD = 0.5;
+    private static final double THRESHOLD_LOSS_PERCENTAGE = 10;
+    private static int PENALTY_COUNT = 0;
 
     private Map<ManeuverType, Map<Attribute, LibSVM>> svrMap;
     private Map<ManeuverType, Map<Attribute, Instances>> datasets;
@@ -76,7 +79,7 @@ public class DriverPatternDetectorService extends Service {
             double similarityY = computeDifference(drivingMeasurements, maneuverRegressionModel, y);
             double similarityZ = computeDifference(drivingMeasurements, maneuverRegressionModel, z);
 
-            if(threshold(similarityX, similarityY, similarityZ)) {
+            if(threshold(similarityX, similarityY, similarityZ, modelNorm(maneuverRegressionModel))) {
                 ManeuverAnomaly maneuverAnomaly = new ManeuverAnomaly(maneuverType);
                 maneuverAnomalies.add(maneuverAnomaly);
             }
@@ -85,12 +88,37 @@ public class DriverPatternDetectorService extends Service {
         return maneuverAnomalies;
     }
 
-    private boolean threshold(double similarityX, double similarityY, double similarityZ) {
-        //TODO: no idea what this should be, needs to be set empirically (?)
-        //TODO: adjustments based on other factors such as eye state, face detection, GSM and SMS data ...
+    private boolean threshold(double similarityX, double similarityY, double similarityZ, double modelNorm) {
+        double threshold = calculateThreshold(modelNorm);
 
-        //PLACEHOLDER
-        return similarityX + similarityY + similarityZ < 5;
+        return similarityX + similarityY + similarityZ < threshold;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private double modelNorm(List<DrivingMeasurement> drivingMeasurements) {
+
+        return attributes.stream()
+                .mapToDouble(attribute -> euclideanNorm(drivingMeasurements, attribute))
+                .sum();
+    }
+
+    private double calculateThreshold(double norm) {
+        return norm * (BASE_THRESHOLD * penalty());
+    }
+
+    private double penalty() {
+        double valueFractionAfterPenalty = 1;
+        for(int i=0; i < PENALTY_COUNT; i++) {
+            valueFractionAfterPenalty *= (1 - THRESHOLD_LOSS_PERCENTAGE / 100);
+        }
+        return valueFractionAfterPenalty;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private double euclideanNorm(List<DrivingMeasurement> drivingMeasurements, Attribute attribute) {
+        return Math.sqrt(drivingMeasurements.stream()
+                .mapToDouble(measurement -> measurement.getAccelerationByAttribute(attribute))
+                .reduce(0, (a, b) -> a + b*b));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -223,6 +251,15 @@ public class DriverPatternDetectorService extends Service {
     private double computeDifference(List<DrivingMeasurement> drivingMeasurements, List<DrivingMeasurement> maneuverRegressionModel, Attribute attribute) {
         DTW dtw = new DTW();
         return dtw.compute(dtwParameter(drivingMeasurements, attribute), dtwParameter(maneuverRegressionModel, attribute)).getDistance();
+    }
+
+    public static void incrementPenaltyCount() {
+        PENALTY_COUNT++;
+    }
+
+    public static void decrementPenaltyCount() {
+        PENALTY_COUNT--;
+        if(PENALTY_COUNT < 0) PENALTY_COUNT = 0;
     }
 
 
