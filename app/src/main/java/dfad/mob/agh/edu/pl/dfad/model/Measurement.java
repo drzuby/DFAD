@@ -22,15 +22,15 @@ public class Measurement {
         return time;
     }
 
-    public double getxAcc() {
+    public double getXAcc() {
         return xAcc;
     }
 
-    public double getyAcc() {
+    public double getYAcc() {
         return yAcc;
     }
 
-    public double getzAcc() {
+    public double getZAcc() {
         return zAcc;
     }
 }

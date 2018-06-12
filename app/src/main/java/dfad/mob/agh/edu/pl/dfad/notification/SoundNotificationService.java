@@ -33,14 +33,12 @@ public class SoundNotificationService extends Service implements MediaPlayer.OnP
             mMediaPlayer = MediaPlayer.create(getApplicationContext(), R.raw.example_sound2);
             mMediaPlayer.setOnPreparedListener(this);
             mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-//            mMediaPlayer.prepareAsync(); // TODO: check whether it is proper to call static create method. Maybe the better solution is to create new object and call prepareAsync.
         }
         return Service.START_NOT_STICKY;
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        // called when MediaPlayer is ready
         mp.start();
     }
 
