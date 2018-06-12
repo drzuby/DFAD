@@ -420,11 +420,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onStop() {
-        try {
-            unregisterReceiver(smsMmsBroadcastReceiver);
-            unregisterReceiver(callsBroadcastReceiver);
-        } catch (IllegalArgumentException ignored) {
-        }
+        unregisterReceiver(smsMmsBroadcastReceiver);
+        unregisterReceiver(callsBroadcastReceiver);
         super.onStop();
     }
 }
