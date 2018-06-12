@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -14,12 +15,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Telephony;
+import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.bosphere.filelogger.FL;
@@ -34,6 +34,7 @@ import java.util.Locale;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
+import dfad.mob.agh.edu.pl.dfad.gsm.CallsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.gsm.SmsMmsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
 import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
@@ -52,6 +53,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     private SensorManager sensorManager;
     private SmsMmsBroadcastReceiver smsMmsBroadcastReceiver;
+    private CallsBroadcastReceiver callsBroadcastReceiver;
 
     private TextView leftEyeTextView;
     private TextView rightEyeTextView;
@@ -82,10 +84,14 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private Button visualizerButton;
 
     private TextView smsMmsTextView;
-    private TextView callsTextView;
+    private TextView incomingCallsTextView;
+    private TextView outgoingCallsTextView;
+    private TextView missedCallsTextView;
 
     private int smsMmsAmount;
-    private int callsAmount;
+    private int incomingCallsAmount;
+    private int outgoingCallsAmount;
+    private int missedCallsAmount;
 
     private final float[] accelerometerReading = new float[4];
     private final float[] magnetometerReading = new float[3];
@@ -110,43 +116,56 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
                 .build());
         FL.setEnabled(true);
 
-        keepScreenOnCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                } else {
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                }
+        keepScreenOnCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }
         });
-        barkButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runSoundNotification();
-            }
-        });
+        barkButton.setOnClickListener(v -> runSoundNotification());
 
-        visualizerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showVisualizer();
-            }
-        });
+        visualizerButton.setOnClickListener(v -> showVisualizer());
 
         smsMmsBroadcastReceiver = new SmsMmsBroadcastReceiver();
-        registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
-        registerReceiver(smsMmsBroadcastReceiver, new IntentFilter(Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION));
-        smsMmsBroadcastReceiver.setSmsListener(new SmsMmsBroadcastReceiver.SmsListener() {
+        IntentFilter smsMmsIntentFilter = new IntentFilter();
+        smsMmsIntentFilter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+        smsMmsIntentFilter.addAction(Telephony.Sms.Intents.WAP_PUSH_RECEIVED_ACTION);
+        registerReceiver(smsMmsBroadcastReceiver, smsMmsIntentFilter);
+        smsMmsBroadcastReceiver.setSmsListener((sender, body) -> smsMmsTextView.setText(String.valueOf(++smsMmsAmount)));
+        smsMmsBroadcastReceiver.setMmsListener(sender -> smsMmsTextView.setText(String.valueOf(++smsMmsAmount)));
+
+        callsBroadcastReceiver = new CallsBroadcastReceiver();
+        IntentFilter callsIntentFilter = new IntentFilter();
+        callsIntentFilter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+        callsIntentFilter.addAction(Intent.ACTION_NEW_OUTGOING_CALL);
+        registerReceiver(callsBroadcastReceiver, callsIntentFilter);
+        callsBroadcastReceiver.setCallsListener(new CallsBroadcastReceiver.CallsListener() {
             @Override
-            public void onTextReceived(String sender, String body) {
-                smsMmsTextView.setText(String.valueOf(++smsMmsAmount));
+            public void onIncomingCallStarted() {
+                incomingCallsTextView.setText(String.valueOf(++incomingCallsAmount));
+                incomingCallsTextView.setTextColor(Color.RED);
             }
-        });
-        smsMmsBroadcastReceiver.setMmsListener(new SmsMmsBroadcastReceiver.MmsListener() {
+
             @Override
-            public void onMediaReceived(String sender) {
-                smsMmsTextView.setText(String.valueOf(++smsMmsAmount));
+            public void onOutgoingCallStarted() {
+                outgoingCallsTextView.setText(String.valueOf(++outgoingCallsAmount));
+                outgoingCallsTextView.setTextColor(Color.RED);
+            }
+
+            @Override
+            public void onIncomingCallEnded() {
+                incomingCallsTextView.setTextColor(Color.BLACK);
+            }
+
+            @Override
+            public void onOutgoingCallEnded() {
+                outgoingCallsTextView.setTextColor(Color.BLACK);
+            }
+
+            @Override
+            public void onMissedCall() {
+                missedCallsTextView.setText(String.valueOf(++missedCallsAmount));
             }
         });
 
@@ -194,7 +213,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         visualizerButton = findViewById(R.id.visualizerButton);
 
         smsMmsTextView = findViewById(R.id.smsMms);
-        callsTextView = findViewById(R.id.calls);
+        incomingCallsTextView = findViewById(R.id.incomingCalls);
+        outgoingCallsTextView = findViewById(R.id.outgoingCalls);
+        missedCallsTextView = findViewById(R.id.missedCalls);
     }
 
     private void runSoundNotification() {
@@ -274,23 +295,15 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onFaceDetected() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                cameraTextView.setText(R.string.face_detected_message);
-            }
-        });
+        runOnUiThread(() -> cameraTextView.setText(R.string.face_detected_message));
     }
 
     @Override
     public void onFaceTimedOut() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                cameraTextView.setText(R.string.face_detected_then_lost_message);
-                leftEyeTextView.setText(R.string.default_eye_label);
-                rightEyeTextView.setText(R.string.default_eye_label);
-            }
+        runOnUiThread(() -> {
+            cameraTextView.setText(R.string.face_lost_message);
+            leftEyeTextView.setText(R.string.default_eye_label);
+            rightEyeTextView.setText(R.string.default_eye_label);
         });
     }
 
@@ -305,28 +318,22 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onLeftEyeChanged(final boolean isOpen) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isOpen) {
-                    leftEyeTextView.setText(R.string.left_eye_open);
-                } else {
-                    leftEyeTextView.setText(R.string.left_eye_closed);
-                }
+        runOnUiThread(() -> {
+            if (isOpen) {
+                leftEyeTextView.setText(R.string.left_eye_open);
+            } else {
+                leftEyeTextView.setText(R.string.left_eye_closed);
             }
         });
     }
 
     @Override
     public void onRightEyeChanged(final boolean isOpen) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (isOpen) {
-                    rightEyeTextView.setText(R.string.right_eye_open);
-                } else {
-                    rightEyeTextView.setText(R.string.right_eye_closed);
-                }
+        runOnUiThread(() -> {
+            if (isOpen) {
+                rightEyeTextView.setText(R.string.right_eye_open);
+            } else {
+                rightEyeTextView.setText(R.string.right_eye_closed);
             }
         });
     }
@@ -346,6 +353,8 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             int hasReceiveSmsPermission = checkSelfPermission(Manifest.permission.RECEIVE_SMS);
             int hasReceiveMmsPermission = checkSelfPermission(Manifest.permission.RECEIVE_MMS);
             int hasReceiveWapPushPermission = checkSelfPermission(Manifest.permission.RECEIVE_WAP_PUSH);
+            int hasReadPhoneStatePermission = checkSelfPermission(Manifest.permission.READ_PHONE_STATE);
+            int hasProcessOutoingCallsPermission = checkSelfPermission(Manifest.permission.PROCESS_OUTGOING_CALLS);
 
             if (hasCameraPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.CAMERA);
@@ -371,6 +380,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
             if (hasReceiveWapPushPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.RECEIVE_WAP_PUSH);
             }
+            if (hasReadPhoneStatePermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.READ_PHONE_STATE);
+            }
+            if (hasProcessOutoingCallsPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.PROCESS_OUTGOING_CALLS);
+            }
 
             if (!permissions.isEmpty()) {
                 requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
@@ -381,6 +396,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     @Override
     public void onStop() {
         unregisterReceiver(smsMmsBroadcastReceiver);
+        unregisterReceiver(callsBroadcastReceiver);
         super.onStop();
     }
 }

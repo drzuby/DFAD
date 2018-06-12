@@ -190,31 +190,63 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="160dp"
-        android:layout_marginTop="260dp"
+        android:layout_marginTop="240dp"
         android:text="@string/sms_mms_messages" />
 
     <TextView
         android:id="@+id/smsMms"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="250dp"
+        android:layout_marginStart="270dp"
+        android:layout_marginTop="240dp"
+        android:text="@string/default_amount" />
+
+    <TextView
+        android:id="@+id/incomingCallsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="260dp"
+        android:text="@string/incoming_calls_label" />
+
+    <TextView
+        android:id="@+id/incomingCalls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="270dp"
         android:layout_marginTop="260dp"
         android:text="@string/default_amount" />
 
     <TextView
-        android:id="@+id/callsLabel"
+        android:id="@+id/outgoingCallsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="160dp"
         android:layout_marginTop="280dp"
-        android:text="@string/calls_label" />
+        android:text="@string/outgoing_calls_label" />
 
     <TextView
-        android:id="@+id/calls"
+        android:id="@+id/outgoingCalls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="250dp"
+        android:layout_marginStart="270dp"
         android:layout_marginTop="280dp"
+        android:text="@string/default_amount" />
+
+    <TextView
+        android:id="@+id/missedCallsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="300dp"
+        android:text="@string/missed_calls_label" />
+
+    <TextView
+        android:id="@+id/missedCalls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="270dp"
+        android:layout_marginTop="300dp"
         android:text="@string/default_amount" />
 
     <CheckBox
@@ -234,7 +266,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="90dp"
-        android:text="@string/hello_world" />
+        android:text="@string/face_lost_message" />
 
     <Button
         android:id="@+id/barkButton"
