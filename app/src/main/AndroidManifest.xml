@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_MMS" />
     <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
 
     <application
         android:allowBackup="true"
@@ -38,7 +40,7 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".visualization.ActionVisualizer"></activity>
+        <activity android:name=".visualization.ActionVisualizer" />
     </application>
 
 </manifest>
