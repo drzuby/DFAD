@@ -39,7 +39,7 @@ public class DriverPatternDetectorServiceTest {
 
         DriverPatternDetectorService driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
 
-        assertEquals(1, driverPatternDetectorService.isAnomaly(drivingMeasurements).size());
+        assertEquals(1, driverPatternDetectorService.isAnomalyByRegression(drivingMeasurements).size());
     }
 
     @Test
@@ -62,7 +62,7 @@ public class DriverPatternDetectorServiceTest {
 
         DriverPatternDetectorService driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
 
-        assertEquals(0, driverPatternDetectorService.isAnomaly(testMeasurements).size());
+        assertEquals(0, driverPatternDetectorService.isAnomalyByRegression(testMeasurements).size());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class DriverPatternDetectorServiceTest {
 
         DriverPatternDetectorService driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
 
-        assertEquals(1, driverPatternDetectorService.isAnomaly(testMeasurements).size());
+        assertEquals(1, driverPatternDetectorService.isAnomalyByRegression(testMeasurements).size());
     }
 
     @Test
@@ -102,7 +102,7 @@ public class DriverPatternDetectorServiceTest {
 
         DriverPatternDetectorService driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
 
-        assertEquals(0, driverPatternDetectorService.isAnomaly(testMeasurements).size());
+        assertEquals(0, driverPatternDetectorService.isAnomalyByRegression(testMeasurements).size());
     }
 
     private void parseDrivingMeasurement(List<DrivingMeasurement> measurements, List<String> lines) {

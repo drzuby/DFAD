@@ -22,12 +22,14 @@ import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import static weka.core.Instances.mergeInstances;
+
 public class DriverPatternDetectorService extends Service {
 
     public static final String X_ATTRIBUTE_NAME = "xTrueAcceleration";
     public static final String Y_ATTRIBUTE_NAME = "yTrueAcceleration";
     public static final String Z_ATTRIBUTE_NAME = "zTrueAcceleration";
-    private static final double BASE_THRESHOLD = 0.5;
+    private static final double BASE_THRESHOLD = 0.7;
     private static final double THRESHOLD_LOSS_PERCENTAGE = 10;
     private static int PENALTY_COUNT = 0;
 
@@ -39,15 +41,68 @@ public class DriverPatternDetectorService extends Service {
     private Attribute measurementIndex;
     private ArrayList<Attribute> attributes;
 
+    private Map<ManeuverType, LibSVM> svcMap;
+
     final IBinder mBinder = new DriverPatternNotificationBinder();
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public DriverPatternDetectorService(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
-        initialize(maneuverData);
+        initializeRegression(maneuverData);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void initialize(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
+    public void initializeSVR(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData, Map<ManeuverType, List<ManeuverMeasurement>> nonManeuverData) {
+        svcMap = new HashMap<>();
+
+        trainClassifier(maneuverData, nonManeuverData);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void trainClassifier(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData, Map<ManeuverType, List<ManeuverMeasurement>> nonManeuverData) {
+        Map<ManeuverType, Instances> anomalyInstances = createClassificationDataset(maneuverData);
+        Map<ManeuverType, Instances> nonAnomalyInstances = createClassificationDataset(nonManeuverData);
+
+        maneuverData.entrySet().forEach(entry -> {
+            ManeuverType maneuverType = entry.getKey();
+
+            svcMap.put(maneuverType, createSVC());
+            Instances anomalyInst = fillClassifierInstances(anomalyInstances.get(maneuverType), entry.getValue(), 1);
+            Instances nonAnomalyInst = fillClassifierInstances(nonAnomalyInstances.get(maneuverType), nonManeuverData.get(maneuverType), 0);
+            Instances trainingInstances = mergeInstances(anomalyInst, nonAnomalyInst);
+            try {
+                svcMap.get(maneuverType).buildClassifier(trainingInstances);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private Instances fillClassifierInstances(Instances dataset, List<ManeuverMeasurement> maneuverMeasurements, int classValue) {
+
+        maneuverMeasurements.forEach(maneuverMeasurement -> {
+            List<DrivingMeasurement> drivingMeasurements = maneuverMeasurement.getDrivingMeasurements();
+
+            Instance instance = new DenseInstance(dataset.numAttributes());
+            instance.setDataset(dataset);
+            int i = 0;
+            for(; i < dataset.numAttributes(); i+=3) {
+                instance.setValue(i, drivingMeasurements.get(i).getxTrueAcceleration());
+                instance.setValue(i+1, drivingMeasurements.get(i+1).getyTrueAcceleration());
+                instance.setValue(i+2, drivingMeasurements.get(i+2).getzTrueAcceleration());
+            }
+
+            instance.setValue(i-2, classValue);
+
+            dataset.add(instance);
+        });
+
+        return dataset;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void initializeRegression(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
         svrMap = new HashMap<>();
         datasets = new HashMap<>();
 
@@ -61,11 +116,11 @@ public class DriverPatternDetectorService extends Service {
         attributes.add(y);
         attributes.add(z);
 
-        trainClassifiers(maneuverData);
+        trainRegression(maneuverData);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public List<ManeuverAnomaly> isAnomaly(List<DrivingMeasurement> drivingMeasurements) {
+    public List<ManeuverAnomaly> isAnomalyByRegression(List<DrivingMeasurement> drivingMeasurements) {
         List<ManeuverAnomaly> maneuverAnomalies = new ArrayList<>();
 
         svrMap.entrySet().forEach(entry -> {
@@ -98,7 +153,7 @@ public class DriverPatternDetectorService extends Service {
     private double modelNorm(List<DrivingMeasurement> drivingMeasurements) {
 
         return attributes.stream()
-                .mapToDouble(attribute -> euclideanNorm(drivingMeasurements, attribute))
+                .mapToDouble(attribute -> average(drivingMeasurements, attribute))
                 .sum();
     }
 
@@ -109,16 +164,16 @@ public class DriverPatternDetectorService extends Service {
     private double penalty() {
         double valueFractionAfterPenalty = 1;
         for(int i=0; i < PENALTY_COUNT; i++) {
-            valueFractionAfterPenalty *= (1 - THRESHOLD_LOSS_PERCENTAGE / 100);
+            valueFractionAfterPenalty *= (1.0 + THRESHOLD_LOSS_PERCENTAGE / 100);
         }
         return valueFractionAfterPenalty;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private double euclideanNorm(List<DrivingMeasurement> drivingMeasurements, Attribute attribute) {
-        return Math.sqrt(drivingMeasurements.stream()
+    private double average(List<DrivingMeasurement> drivingMeasurements, Attribute attribute) {
+        return drivingMeasurements.stream()
                 .mapToDouble(measurement -> measurement.getAccelerationByAttribute(attribute))
-                .reduce(0, (a, b) -> a + b*b));
+                .reduce(0, (a, b) -> a + Math.abs(b))/drivingMeasurements.size();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -150,12 +205,12 @@ public class DriverPatternDetectorService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void trainClassifiers(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
+    private void trainRegression(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
 
-        maneuverData.keySet().forEach(this::initializeClassifier);
+        maneuverData.keySet().forEach(this::initializeSVR);
 
         attributes.forEach(attribute -> maneuverData.entrySet().forEach(entry -> {
-            Instances maneuverTrainingDataset = createDataset(entry.getKey(), attribute);
+            Instances maneuverTrainingDataset = createRegressionDataset(entry.getKey(), attribute);
 
             ManeuverType maneuverType = entry.getKey();
 
@@ -184,9 +239,17 @@ public class DriverPatternDetectorService extends Service {
     }
 
     private LibSVM createSVR() {
+        return createSVM("-S 3 -K 2 -C 10000");
+    }
+
+    private LibSVM createSVC() {
+        return createSVM("-S 0 -K 2 -C 10000");
+    }
+
+    private LibSVM createSVM(String params) {
         LibSVM libSVM = new LibSVM();
         try {
-            libSVM.setOptions("-S 3 -K 2 -C 10000".split(" "));
+            libSVM.setOptions(params.split(" "));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -195,7 +258,7 @@ public class DriverPatternDetectorService extends Service {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void initializeClassifier(ManeuverType maneuverType) {
+    private void initializeSVR(ManeuverType maneuverType) {
 
         if(!svrMap.containsKey(maneuverType)) {
             svrMap.put(maneuverType, new HashMap<>());
@@ -206,7 +269,7 @@ public class DriverPatternDetectorService extends Service {
 
     @TargetApi(Build.VERSION_CODES.N)
     private Instances createTrainingInstances(ManeuverMeasurement maneuverMeasurement, Attribute attribute) {
-        Instances dataset = createDataset(maneuverMeasurement.getManeuverType(), attribute);
+        Instances dataset = createRegressionDataset(maneuverMeasurement.getManeuverType(), attribute);
 
         maneuverMeasurement.getDrivingMeasurements().stream()
                 .map(maneuverMeasurementPom -> createInstance(maneuverMeasurementPom, attribute))
@@ -223,7 +286,7 @@ public class DriverPatternDetectorService extends Service {
         return instance;
     }
 
-    private Instances createDataset(ManeuverType maneueverType, Attribute attribute) {
+    private Instances createRegressionDataset(ManeuverType maneueverType, Attribute attribute) {
         Instances toRet;
         ArrayList<Attribute> atrributes = new ArrayList<>();
         atrributes.add(measurementIndex);
@@ -232,6 +295,38 @@ public class DriverPatternDetectorService extends Service {
 
         toRet = new Instances(instancesName, atrributes, 0);
         toRet.setClass(attribute);
+
+        return toRet;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private Map<ManeuverType, Instances> createClassificationDataset(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
+        Map<ManeuverType, Instances> toRet = new HashMap<>();
+
+        maneuverData.entrySet().forEach(entry -> {
+            ManeuverType maneuverType = entry.getKey();
+            List<ManeuverMeasurement> maneuverMeasurements = entry.getValue();
+
+            ArrayList<Attribute> classificationAttributes = new ArrayList<>();
+
+            int measurementCount = maneuverMeasurements.get(0).getDrivingMeasurements().size();
+
+
+            for(int i = 0; i < measurementCount; i++) {
+                classificationAttributes.add(new Attribute(String.format("x%d", i)));
+                classificationAttributes.add(new Attribute(String.format("y%d", i)));
+                classificationAttributes.add(new Attribute(String.format("z%d", i)));
+            }
+
+            Attribute classAttribute = new Attribute("anomaly");
+
+            classificationAttributes.add(classAttribute);
+
+            Instances instances = new Instances(maneuverType.name(), classificationAttributes, 0);
+            instances.setClass(classAttribute);
+
+            toRet.put(entry.getKey(), instances);
+        });
 
         return toRet;
     }
