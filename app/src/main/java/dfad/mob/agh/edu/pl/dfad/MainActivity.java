@@ -280,12 +280,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
         final AtomicInteger indexHolder = new AtomicInteger();
 
-        lines.forEach(l -> {
+        for (String l : lines) {
             double accX = Double.parseDouble(l.split(";")[0]);
             double accY = Double.parseDouble(l.split(";")[1]);
             double accZ = Double.parseDouble(l.split(";")[2]);
             measurements.add(new DrivingMeasurement(indexHolder.getAndIncrement(), accX, accY, accZ));
-        });
+        }
     }
 
     private List<String> loadFromFile(List<DrivingMeasurement> drivingMeasurements, int resourceId) throws IOException {

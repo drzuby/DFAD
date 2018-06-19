@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
-
 
 import weka.classifiers.functions.LibSVM;
 import weka.core.Attribute;
@@ -62,7 +60,7 @@ public class DriverPatternDetectorService extends Service {
         Map<ManeuverType, Instances> anomalyInstances = createClassificationDataset(maneuverData);
         Map<ManeuverType, Instances> nonAnomalyInstances = createClassificationDataset(nonManeuverData);
 
-        maneuverData.entrySet().forEach(entry -> {
+        for (Map.Entry<ManeuverType, List<ManeuverMeasurement>> entry : maneuverData.entrySet()) {
             ManeuverType maneuverType = entry.getKey();
 
             svcMap.put(maneuverType, createSVC());
@@ -74,29 +72,29 @@ public class DriverPatternDetectorService extends Service {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        });
+        }
 
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private Instances fillClassifierInstances(Instances dataset, List<ManeuverMeasurement> maneuverMeasurements, int classValue) {
 
-        maneuverMeasurements.forEach(maneuverMeasurement -> {
+        for (ManeuverMeasurement maneuverMeasurement : maneuverMeasurements) {
             List<DrivingMeasurement> drivingMeasurements = maneuverMeasurement.getDrivingMeasurements();
 
             Instance instance = new DenseInstance(dataset.numAttributes());
             instance.setDataset(dataset);
             int i = 0;
-            for(; i < dataset.numAttributes(); i+=3) {
+            for (; i < dataset.numAttributes(); i += 3) {
                 instance.setValue(i, drivingMeasurements.get(i).getxTrueAcceleration());
-                instance.setValue(i+1, drivingMeasurements.get(i+1).getyTrueAcceleration());
-                instance.setValue(i+2, drivingMeasurements.get(i+2).getzTrueAcceleration());
+                instance.setValue(i + 1, drivingMeasurements.get(i + 1).getyTrueAcceleration());
+                instance.setValue(i + 2, drivingMeasurements.get(i + 2).getzTrueAcceleration());
             }
 
-            instance.setValue(i-2, classValue);
+            instance.setValue(i - 2, classValue);
 
             dataset.add(instance);
-        });
+        }
 
         return dataset;
     }
@@ -123,7 +121,7 @@ public class DriverPatternDetectorService extends Service {
     public List<ManeuverAnomaly> isAnomalyByRegression(List<DrivingMeasurement> drivingMeasurements) {
         List<ManeuverAnomaly> maneuverAnomalies = new ArrayList<>();
 
-        svrMap.entrySet().forEach(entry -> {
+        for (Map.Entry<ManeuverType, Map<Attribute, LibSVM>> entry : svrMap.entrySet()) {
             ManeuverType maneuverType = entry.getKey();
 
             int measurementCount = drivingMeasurements.size();
@@ -134,11 +132,11 @@ public class DriverPatternDetectorService extends Service {
             double similarityY = computeDifference(drivingMeasurements, maneuverRegressionModel, y);
             double similarityZ = computeDifference(drivingMeasurements, maneuverRegressionModel, z);
 
-            if(threshold(similarityX, similarityY, similarityZ, modelNorm(maneuverRegressionModel))) {
+            if (threshold(similarityX, similarityY, similarityZ, modelNorm(maneuverRegressionModel))) {
                 ManeuverAnomaly maneuverAnomaly = new ManeuverAnomaly(maneuverType);
                 maneuverAnomalies.add(maneuverAnomaly);
             }
-        });
+        }
 
         return maneuverAnomalies;
     }
@@ -152,9 +150,12 @@ public class DriverPatternDetectorService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.N)
     private double modelNorm(List<DrivingMeasurement> drivingMeasurements) {
 
-        return attributes.stream()
-                .mapToDouble(attribute -> average(drivingMeasurements, attribute))
-                .sum();
+        double sum = 0.0;
+        for (Attribute attribute : attributes) {
+            double average = average(drivingMeasurements, attribute);
+            sum += average;
+        }
+        return sum;
     }
 
     private double calculateThreshold(double norm) {
@@ -171,35 +172,37 @@ public class DriverPatternDetectorService extends Service {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private double average(List<DrivingMeasurement> drivingMeasurements, Attribute attribute) {
-        return drivingMeasurements.stream()
-                .mapToDouble(measurement -> measurement.getAccelerationByAttribute(attribute))
-                .reduce(0, (a, b) -> a + Math.abs(b))/drivingMeasurements.size();
+        double acc = 0;
+        for (DrivingMeasurement measurement : drivingMeasurements) {
+            double accelerationByAttribute = measurement.getAccelerationByAttribute(attribute);
+            acc = acc + Math.abs(accelerationByAttribute);
+        }
+        return acc /drivingMeasurements.size();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private List<DrivingMeasurement> regressionModelForManeuver(ManeuverType maneuverType, int measurementCount) {
         List<DrivingMeasurement> drivingMeasurements = new ArrayList<>();
 
-        IntStream.range(0, measurementCount)
-                .forEach(index -> {
-                    DrivingMeasurement drivingMeasurement = new DrivingMeasurement();
-                    attributes.forEach(attribute -> {
-                        Instance instance = new DenseInstance(1);
-                        instance.setDataset(datasets.get(maneuverType).get(attribute));
-                        instance.setValue(measurementIndex, index);
-                        double result = -1;
+        for (int index = 0; index < measurementCount; index++) {
+            DrivingMeasurement drivingMeasurement = new DrivingMeasurement();
+            for (Attribute attribute : attributes) {
+                Instance instance = new DenseInstance(1);
+                instance.setDataset(datasets.get(maneuverType).get(attribute));
+                instance.setValue(measurementIndex, index);
+                double result = -1;
 
-                        try {
-                            result = svrMap.get(maneuverType).get(attribute).classifyInstance(instance);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                try {
+                    result = svrMap.get(maneuverType).get(attribute).classifyInstance(instance);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-                        drivingMeasurement.setAccelerationByAttribute(result, attribute);
-                        drivingMeasurement.setMeasurementIndexInManeuver(index);
-                    });
-                    drivingMeasurements.add(drivingMeasurement);
-                });
+                drivingMeasurement.setAccelerationByAttribute(result, attribute);
+                drivingMeasurement.setMeasurementIndexInManeuver(index);
+            }
+            drivingMeasurements.add(drivingMeasurement);
+        }
 
         return drivingMeasurements;
     }
@@ -207,34 +210,38 @@ public class DriverPatternDetectorService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void trainRegression(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
 
-        maneuverData.keySet().forEach(this::initializeSVR);
+        for (ManeuverType type : maneuverData.keySet()) {
+            initializeSVR(type);
+        }
 
-        attributes.forEach(attribute -> maneuverData.entrySet().forEach(entry -> {
-            Instances maneuverTrainingDataset = createRegressionDataset(entry.getKey(), attribute);
+        for (Attribute attribute : attributes) {
+            for (Map.Entry<ManeuverType, List<ManeuverMeasurement>> entry : maneuverData.entrySet()) {
+                Instances maneuverTrainingDataset = createRegressionDataset(entry.getKey(), attribute);
 
-            ManeuverType maneuverType = entry.getKey();
+                ManeuverType maneuverType = entry.getKey();
 
-            Instances attributeTrainingInstances = entry.getValue().stream()
-                    .map(maneuverMeasurements -> createTrainingInstances(maneuverMeasurements, attribute))
-                    .reduce(maneuverTrainingDataset, (inst1, inst2) -> {
-                        if(inst2 == null) {
+                Instances attributeTrainingInstances = entry.getValue().stream()
+                        .map(maneuverMeasurements -> createTrainingInstances(maneuverMeasurements, attribute))
+                        .reduce(maneuverTrainingDataset, (inst1, inst2) -> {
+                            if (inst2 == null) {
+                                return inst1;
+                            }
+                            inst1.addAll(inst2.subList(0, inst2.size()));
                             return inst1;
-                        }
-                        inst1.addAll(inst2.subList(0, inst2.size()));
-                        return inst1;
-                    });
+                        });
 
-            try {
-                if(!datasets.containsKey(maneuverType)) {
-                    datasets.put(maneuverType, new HashMap<>());
+                try {
+                    if (!datasets.containsKey(maneuverType)) {
+                        datasets.put(maneuverType, new HashMap<>());
+                    }
+                    datasets.get(maneuverType).put(attribute, attributeTrainingInstances);
+
+                    svrMap.get(maneuverType).get(attribute).buildClassifier(attributeTrainingInstances);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                datasets.get(maneuverType).put(attribute, attributeTrainingInstances);
-
-                svrMap.get(maneuverType).get(attribute).buildClassifier(attributeTrainingInstances);
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }));
+        }
 
     }
 
@@ -263,7 +270,9 @@ public class DriverPatternDetectorService extends Service {
         if(!svrMap.containsKey(maneuverType)) {
             svrMap.put(maneuverType, new HashMap<>());
         }
-        attributes.forEach(attribute -> svrMap.get(maneuverType).put(attribute, createSVR()));
+        for (Attribute attribute : attributes) {
+            svrMap.get(maneuverType).put(attribute, createSVR());
+        }
 
     }
 
@@ -271,9 +280,10 @@ public class DriverPatternDetectorService extends Service {
     private Instances createTrainingInstances(ManeuverMeasurement maneuverMeasurement, Attribute attribute) {
         Instances dataset = createRegressionDataset(maneuverMeasurement.getManeuverType(), attribute);
 
-        maneuverMeasurement.getDrivingMeasurements().stream()
-                .map(maneuverMeasurementPom -> createInstance(maneuverMeasurementPom, attribute))
-                .forEach(dataset::add);
+        for (DrivingMeasurement maneuverMeasurementPom : maneuverMeasurement.getDrivingMeasurements()) {
+            Instance instance = createInstance(maneuverMeasurementPom, attribute);
+            dataset.add(instance);
+        }
 
         return dataset;
     }
@@ -303,7 +313,7 @@ public class DriverPatternDetectorService extends Service {
     private Map<ManeuverType, Instances> createClassificationDataset(Map<ManeuverType, List<ManeuverMeasurement>> maneuverData) {
         Map<ManeuverType, Instances> toRet = new HashMap<>();
 
-        maneuverData.entrySet().forEach(entry -> {
+        for (Map.Entry<ManeuverType, List<ManeuverMeasurement>> entry : maneuverData.entrySet()) {
             ManeuverType maneuverType = entry.getKey();
             List<ManeuverMeasurement> maneuverMeasurements = entry.getValue();
 
@@ -312,7 +322,7 @@ public class DriverPatternDetectorService extends Service {
             int measurementCount = maneuverMeasurements.get(0).getDrivingMeasurements().size();
 
 
-            for(int i = 0; i < measurementCount; i++) {
+            for (int i = 0; i < measurementCount; i++) {
                 classificationAttributes.add(new Attribute(String.format("x%d", i)));
                 classificationAttributes.add(new Attribute(String.format("y%d", i)));
                 classificationAttributes.add(new Attribute(String.format("z%d", i)));
@@ -326,7 +336,7 @@ public class DriverPatternDetectorService extends Service {
             instances.setClass(classAttribute);
 
             toRet.put(entry.getKey(), instances);
-        });
+        }
 
         return toRet;
     }
