@@ -38,10 +38,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
+import dfad.mob.agh.edu.pl.dfad.detector.ComputationTask;
 import dfad.mob.agh.edu.pl.dfad.detector.DriverPatternDetectorService;
 import dfad.mob.agh.edu.pl.dfad.detector.DrivingMeasurement;
 import dfad.mob.agh.edu.pl.dfad.detector.DrivingWindow;
@@ -64,11 +66,14 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
 
+    private static MainActivity instance;
+
     private SensorManager sensorManager;
     private SmsMmsBroadcastReceiver smsMmsBroadcastReceiver;
     private CallsBroadcastReceiver callsBroadcastReceiver;
     private DrivingWindow drivingWindow = new DrivingWindow();
     private DriverPatternDetectorService driverPatternDetectorService;
+    private ComputationTask computationTask;
 
     private LineChart chart;
     private TextView xResTextView;
@@ -116,6 +121,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        instance = this;
 
         assignWidgets();
         initializeChart();
@@ -267,6 +273,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         trainingData.put(ManeuverType.AGGRESIVE_STOP, maneuvers);
 
         driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
+        computationTask = new ComputationTask(driverPatternDetectorService);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -293,7 +300,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
     }
 
-    private void runSoundNotification() {
+    public void runSoundNotification() {
         Intent soundNotificationIntent = new Intent(this, SoundNotificationService.class);
         soundNotificationIntent.setAction(SoundNotificationService.ACTION_PLAY);
         startService(soundNotificationIntent);
@@ -363,9 +370,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         addEntry(curMeasurement);
         drivingWindow.addMeasurement(curMeasurement);
 
-        if (isAnomalyDetected()) {
-            runSoundNotification();
-        }
+        CompletableFuture.runAsync(() -> {
+            computationTask.checkAnomaly(drivingWindow);
+        });
     }
 
     @Override
@@ -491,5 +498,9 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         unregisterReceiver(callsBroadcastReceiver);
         sensorManager.unregisterListener(this);
         super.onStop();
+    }
+
+    public static MainActivity getInstance() {
+        return instance;
     }
 }
