@@ -8,256 +8,129 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity">
 
-    <TextView
-        android:id="@+id/leftEye"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:text="@string/default_eye_label" />
-
-    <TextView
-        android:id="@+id/rightEye"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="160dp"
-        android:text="@string/default_eye_label" />
-
-    <TextView
-        android:id="@+id/accLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="30dp"
-        android:text="@string/acc_label" />
-
-    <TextView
-        android:id="@+id/xAcc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="60dp"
-        android:text="@string/x_label" />
-
-    <TextView
-        android:id="@+id/yAcc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="80dp"
-        android:text="@string/y_label" />
-
-    <TextView
-        android:id="@+id/zAcc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="100dp"
-        android:text="@string/z_label" />
-
-    <TextView
-        android:id="@+id/graLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="30dp"
-        android:text="@string/gra_label" />
-
-    <TextView
-        android:id="@+id/xGra"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="60dp"
-        android:text="@string/x_label" />
-
-    <TextView
-        android:id="@+id/yGra"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="80dp"
-        android:text="@string/y_label" />
-
-    <TextView
-        android:id="@+id/zGra"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="100dp"
-        android:text="@string/z_label" />
-
-    <TextView
-        android:id="@+id/magLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="130dp"
-        android:text="@string/mag_label" />
-
-    <TextView
-        android:id="@+id/xMag"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="160dp"
-        android:text="@string/x_label" />
-
-    <TextView
-        android:id="@+id/yMag"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="180dp"
-        android:text="@string/y_label" />
-
-    <TextView
-        android:id="@+id/zMag"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="200dp"
-        android:text="@string/z_label" />
-
-    <TextView
-        android:id="@+id/posLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="130dp"
-        android:text="@string/pos_label" />
-
-    <TextView
-        android:id="@+id/xPos"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="160dp"
-        android:text="@string/x_label" />
-
-    <TextView
-        android:id="@+id/yPos"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="180dp"
-        android:text="@string/y_label" />
-
-    <TextView
-        android:id="@+id/zPos"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="200dp"
-        android:text="@string/z_label" />
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart"
+        android:layout_width="match_parent"
+        android:layout_height="249dp" />
 
     <TextView
         android:id="@+id/resLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="230dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/chart"
+        android:layout_marginBottom="200dp"
         android:text="@string/res_label" />
 
     <TextView
         android:id="@+id/xRes"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="260dp"
+        android:layout_alignStart="@+id/chart"
+        android:layout_below="@+id/resLabel"
+        android:layout_marginTop="-200dp"
         android:text="@string/x_label" />
 
     <TextView
         android:id="@+id/yRes"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="280dp"
+        android:layout_alignStart="@+id/chart"
+        android:layout_below="@+id/xRes"
         android:text="@string/y_label" />
 
     <TextView
         android:id="@+id/zRes"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="300dp"
+        android:layout_alignStart="@+id/chart"
+        android:layout_below="@+id/yRes"
         android:text="@string/z_label" />
 
     <TextView
         android:id="@+id/smsMmsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/resLabel"
         android:layout_marginStart="160dp"
-        android:layout_marginTop="240dp"
         android:text="@string/sms_mms_messages" />
 
     <TextView
         android:id="@+id/smsMms"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="270dp"
-        android:layout_marginTop="240dp"
+        android:layout_alignTop="@+id/resLabel"
+        android:layout_marginStart="260dp"
         android:text="@string/default_amount" />
 
     <TextView
         android:id="@+id/incomingCallsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="260dp"
+        android:layout_alignStart="@+id/smsMmsLabel"
+        android:layout_below="@+id/resLabel"
+        android:layout_marginTop="-200dp"
         android:text="@string/incoming_calls_label" />
 
     <TextView
         android:id="@+id/incomingCalls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="270dp"
-        android:layout_marginTop="260dp"
+        android:layout_alignStart="@+id/smsMms"
+        android:layout_below="@+id/resLabel"
+        android:layout_marginTop="-200dp"
         android:text="@string/default_amount" />
 
     <TextView
         android:id="@+id/outgoingCallsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="280dp"
+        android:layout_alignStart="@+id/smsMmsLabel"
+        android:layout_below="@+id/xRes"
         android:text="@string/outgoing_calls_label" />
 
     <TextView
         android:id="@+id/outgoingCalls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="270dp"
-        android:layout_marginTop="280dp"
+        android:layout_alignStart="@+id/smsMms"
+        android:layout_below="@+id/xRes"
         android:text="@string/default_amount" />
 
     <TextView
         android:id="@+id/missedCallsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="160dp"
-        android:layout_marginTop="300dp"
+        android:layout_alignStart="@id/smsMmsLabel"
+        android:layout_below="@+id/yRes"
         android:text="@string/missed_calls_label" />
 
     <TextView
         android:id="@+id/missedCalls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="270dp"
-        android:layout_marginTop="300dp"
+        android:layout_alignStart="@+id/smsMms"
+        android:layout_below="@+id/yRes"
         android:text="@string/default_amount" />
 
-    <CheckBox
-        android:id="@+id/keepScreenOn"
+
+    <TextView
+        android:id="@+id/leftEye"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="120dp"
-        android:checked="false"
-        android:text="@string/keep_screen_on" />
+        android:layout_marginBottom="100dp"
+        android:layout_toStartOf="@id/keepScreenOn"
+        android:text="@string/default_eye_label" />
+
+    <TextView
+        android:id="@+id/rightEye"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="100dp"
+        android:layout_toEndOf="@+id/keepScreenOn"
+        android:text="@string/default_eye_label" />
 
     <TextView
         android:id="@+id/cameraTextView"
@@ -265,27 +138,16 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="90dp"
+        android:layout_marginBottom="70dp"
         android:text="@string/face_lost_message" />
 
-    <Button
-        android:id="@+id/barkButton"
+    <CheckBox
+        android:id="@+id/keepScreenOn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/cameraTextView"
-        android:layout_marginStart="59dp"
-        android:layout_marginTop="-90dp"
-        android:text="@string/bark_button_label" />
-
-    <Button
-        android:id="@+id/visualizerButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@+id/cameraTextView"
-        android:layout_marginEnd="59dp"
-        android:layout_marginTop="-90dp"
-        android:text="SHOW" />
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:checked="false"
+        android:text="@string/keep_screen_on" />
 
 </RelativeLayout>

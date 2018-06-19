@@ -15,12 +15,17 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.support.annotation.RequiresApi;
+import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
+
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,7 +51,6 @@ import dfad.mob.agh.edu.pl.dfad.gsm.CallsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.gsm.SmsMmsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.model.Measurement;
 import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
-import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
 
 /**
  * Don't forget to add the permissions to the AndroidManifest.xml!
@@ -59,45 +63,25 @@ import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
 public class MainActivity extends Activity implements FrontCameraRetriever.Listener, FaceDetectionCamera.Listener, SensorEventListener {
 
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
-    private static final String RESOURCE1_FILE_NAME = "1stStop.txt";
-    private static final String RESOURCE2_FILE_NAME = "2ndStop.txt";
 
     private SensorManager sensorManager;
     private SmsMmsBroadcastReceiver smsMmsBroadcastReceiver;
     private CallsBroadcastReceiver callsBroadcastReceiver;
+    private DrivingWindow drivingWindow = new DrivingWindow();
+    private DriverPatternDetectorService driverPatternDetectorService;
 
-    private TextView leftEyeTextView;
-    private TextView rightEyeTextView;
-
-    private TextView xAccTextView;
-    private TextView yAccTextView;
-    private TextView zAccTextView;
-
-    private TextView xGraTextView;
-    private TextView yGraTextView;
-    private TextView zGraTextView;
-
-    private TextView xMagTextView;
-    private TextView yMagTextView;
-    private TextView zMagTextView;
-
-    private TextView xPosTextView;
-    private TextView yPosTextView;
-    private TextView zPosTextView;
-
+    private LineChart chart;
     private TextView xResTextView;
     private TextView yResTextView;
     private TextView zResTextView;
-
-    private CheckBox keepScreenOnCheckBox;
-    private TextView cameraTextView;
-    private Button barkButton;
-    private Button visualizerButton;
-
     private TextView smsMmsTextView;
     private TextView incomingCallsTextView;
     private TextView outgoingCallsTextView;
     private TextView missedCallsTextView;
+    private TextView leftEyeTextView;
+    private TextView rightEyeTextView;
+    private TextView cameraTextView;
+    private CheckBox keepScreenOnCheckBox;
 
     private int smsMmsAmount;
     private int incomingCallsAmount;
@@ -113,16 +97,28 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private final float[] orientationAngles = new float[3];
     private final float[] trueAcceleration = new float[4];
 
-    private DrivingWindow drivingWindow = new DrivingWindow();
-    private DriverPatternDetectorService driverPatternDetectorService;
+    private static final int WINDOW_SIZE = 500;
+    private static final String X_AXIS_NAME = "X";
+    private static final String Y_AXIS_NAME = "Y";
+    private static final String Z_AXIS_NAME = "Z";
+    private static final boolean CHART_DRAW_FILLED = true;
+    private static final boolean CHART_DRAW_CIRCLES = false;
+    private List<Entry> entriesX = new ArrayList<>();
+    private List<Entry> entriesY = new ArrayList<>();
+    private List<Entry> entriesZ = new ArrayList<>();
+    private LineDataSet dataSetX;
+    private LineDataSet dataSetY;
+    private LineDataSet dataSetZ;
+    private LineData lineData;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        assignWidgets();
 
+        assignWidgets();
+        initializeChart();
         keepScreenOnCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -130,26 +126,69 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }
         });
-        barkButton.setOnClickListener(v -> runSoundNotification());
-
-        visualizerButton.setOnClickListener(v -> showVisualizer());
 
         registerSmsMmsBroadcastReceiver();
-
         registerCallsBroadcastReceiver();
 
         try {
             initializeDetector();
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
 
-        // Go get the front facing camera of the device
-        // best practice is to do this asynchronously
         FrontCameraRetriever.retrieveFor(this);
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
+        registerSensorService();
+    }
+
+    private void initializeChart() {
+        loadInitEntries();
+        setChartDataSetParameters();
+        loadChart();
+    }
+
+    public void addEntry(Measurement m) {
+        if (dataSetX.getValues().size() > WINDOW_SIZE) {
+            dataSetX.removeFirst();
+            dataSetY.removeFirst();
+            dataSetZ.removeFirst();
+        }
+
+        dataSetX.addEntry(new Entry(m.getTime(), (float) m.getXAcc()));
+        dataSetY.addEntry(new Entry(m.getTime(), (float) m.getYAcc()));
+        dataSetZ.addEntry(new Entry(m.getTime(), (float) m.getZAcc()));
+
+        lineData.notifyDataChanged();
+        chart.notifyDataSetChanged();
+        chart.invalidate();
+    }
+
+    private void loadInitEntries() {
+        Measurement m = new Measurement(0, 0, 0);
+        entriesX.add(new Entry(m.getTime(), 0));
+        entriesY.add(new Entry(m.getTime(), 0));
+        entriesZ.add(new Entry(m.getTime(), 0));
+    }
+
+    private void setChartDataSetParameters() {
+        dataSetX = new LineDataSet(entriesX, X_AXIS_NAME);
+        dataSetX.setDrawFilled(CHART_DRAW_FILLED);
+        dataSetX.setColor(ContextCompat.getColor(getApplicationContext(), R.color.colorAccent));
+        dataSetX.setDrawCircles(CHART_DRAW_CIRCLES);
+
+        dataSetY = new LineDataSet(entriesY, Y_AXIS_NAME);
+        dataSetY.setDrawFilled(CHART_DRAW_FILLED);
+        dataSetY.setColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimary));
+        dataSetY.setDrawCircles(CHART_DRAW_CIRCLES);
+
+        dataSetZ = new LineDataSet(entriesZ, Z_AXIS_NAME);
+        dataSetZ.setDrawFilled(CHART_DRAW_FILLED);
+        dataSetZ.setColor(ContextCompat.getColor(getApplicationContext(), R.color.colorGreen));
+        dataSetZ.setDrawCircles(CHART_DRAW_CIRCLES);
+    }
+
+    private void loadChart() {
+        lineData = new LineData(dataSetX, dataSetY, dataSetZ);
+        chart.setData(lineData);
+        chart.invalidate();
     }
 
     private void registerSmsMmsBroadcastReceiver() {
@@ -208,9 +247,11 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         });
     }
 
-    private void showVisualizer() {
-        Intent visualizerIntent = new Intent(this, ActionVisualizer.class);
-        startActivity(visualizerIntent);
+    private void registerSensorService() {
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -234,38 +275,22 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     }
 
     private void assignWidgets() {
-        leftEyeTextView = findViewById(R.id.leftEye);
-        rightEyeTextView = findViewById(R.id.rightEye);
-
-        xAccTextView = findViewById(R.id.xAcc);
-        yAccTextView = findViewById(R.id.yAcc);
-        zAccTextView = findViewById(R.id.zAcc);
-
-        xGraTextView = findViewById(R.id.xGra);
-        yGraTextView = findViewById(R.id.yGra);
-        zGraTextView = findViewById(R.id.zGra);
-
-        xMagTextView = findViewById(R.id.xMag);
-        yMagTextView = findViewById(R.id.yMag);
-        zMagTextView = findViewById(R.id.zMag);
-
-        xPosTextView = findViewById(R.id.xPos);
-        yPosTextView = findViewById(R.id.yPos);
-        zPosTextView = findViewById(R.id.zPos);
+        chart = findViewById(R.id.chart);
 
         xResTextView = findViewById(R.id.xRes);
         yResTextView = findViewById(R.id.yRes);
         zResTextView = findViewById(R.id.zRes);
 
-        keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
-        cameraTextView = findViewById(R.id.cameraTextView);
-        barkButton = findViewById(R.id.barkButton);
-        visualizerButton = findViewById(R.id.visualizerButton);
-
         smsMmsTextView = findViewById(R.id.smsMms);
         incomingCallsTextView = findViewById(R.id.incomingCalls);
         outgoingCallsTextView = findViewById(R.id.outgoingCalls);
         missedCallsTextView = findViewById(R.id.missedCalls);
+
+        leftEyeTextView = findViewById(R.id.leftEye);
+        rightEyeTextView = findViewById(R.id.rightEye);
+        cameraTextView = findViewById(R.id.cameraTextView);
+
+        keepScreenOnCheckBox = findViewById(R.id.keepScreenOn);
     }
 
     private void runSoundNotification() {
@@ -313,21 +338,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
             System.arraycopy(event.values, 0, accelerometerReading,
                     0, 3);
-            xAccTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
-            yAccTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
-            zAccTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, magnetometerReading,
                     0, magnetometerReading.length);
-            xMagTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
-            yMagTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
-            zMagTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
         } else if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
             System.arraycopy(event.values, 0, gravityReading,
                     0, gravityReading.length);
-            xGraTextView.setText(String.format(Locale.ENGLISH, "x: %f", event.values[0]));
-            yGraTextView.setText(String.format(Locale.ENGLISH, "y: %f", event.values[1]));
-            zGraTextView.setText(String.format(Locale.ENGLISH, "z: %f", event.values[2]));
         }
         updateTrueAcceleration();
     }
@@ -339,15 +355,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         Matrix.invertM(invertedRotationMatrix, 0, rotationMatrix, 0);
         Matrix.multiplyMV(trueAcceleration, 0, invertedRotationMatrix, 0, accelerometerReading, 0);
 
-        xPosTextView.setText(String.format(Locale.ENGLISH, "x: %f", orientationAngles[0]));
-        yPosTextView.setText(String.format(Locale.ENGLISH, "y: %f", orientationAngles[1]));
-        zPosTextView.setText(String.format(Locale.ENGLISH, "z: %f", orientationAngles[2]));
-
         xResTextView.setText(String.format(Locale.ENGLISH, "x: %f", trueAcceleration[0]));
         yResTextView.setText(String.format(Locale.ENGLISH, "y: %f", trueAcceleration[1]));
         zResTextView.setText(String.format(Locale.ENGLISH, "z: %f", trueAcceleration[2]));
 
         Measurement curMeasurement = new Measurement(trueAcceleration[0], trueAcceleration[1], trueAcceleration[2]);
+        addEntry(curMeasurement);
         drivingWindow.addMeasurement(curMeasurement);
 
         if (isAnomalyDetected()) {
@@ -357,24 +370,15 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onLoaded(FaceDetectionCamera camera) {
-        // When the front facing camera has been retrieved
-        // then initialise it i.e turn face detection on
-
         try {
             camera.initialise(this, getApplicationContext());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // If you wanted to show a preview of what the camera can see
-        // here is where you would do it
     }
 
     @Override
     public void onFailedToLoadFaceDetectionCamera() {
-        // This can happen if
-        // there is no front facing camera
-        // or another app is using the camera
-        // or our app or another app failed to release the camera properly
         Log.wtf(TAG, "Failed to load camera, what went wrong?");
         cameraTextView.setText(R.string.error_with_face_detection);
     }
@@ -395,10 +399,6 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
 
     @Override
     public void onFaceDetectionNonRecoverableError() {
-        // This can happen if
-        // Face detection not supported on this device
-        // Something went wrong in the Android api
-        // or our app or another app failed to release the camera properly
         cameraTextView.setText(R.string.error_with_face_detection);
     }
 
@@ -424,7 +424,6 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         });
     }
 
-    //https://stackoverflow.com/questions/37458157/error-failed-to-connect-to-camera-service-android-marshmallow
     @Override
     protected void onStart() {
         super.onStart();
@@ -490,6 +489,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     public void onStop() {
         unregisterReceiver(smsMmsBroadcastReceiver);
         unregisterReceiver(callsBroadcastReceiver);
+        sensorManager.unregisterListener(this);
         super.onStop();
     }
 }
