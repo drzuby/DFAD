@@ -9,7 +9,10 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 
+import com.google.android.gms.common.util.ListUtils;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -345,8 +348,10 @@ public class DriverPatternDetectorService extends Service {
     private float[] dtwParameter(List<DrivingMeasurement> drivingMeasurements, Attribute attribute) {
         float[] toRet = new float[drivingMeasurements.size()];
 
-        for(DrivingMeasurement drivingMeasurement: drivingMeasurements) {
-            toRet[drivingMeasurement.getMeasurementIndexInManeuver()] = (float) drivingMeasurement.getAccelerationByAttribute(attribute);
+        Collections.sort(drivingMeasurements, (dm1, dm2) -> Integer.compare(dm1.getMeasurementIndexInManeuver(), dm2.getMeasurementIndexInManeuver()));
+
+        for(int i = 0; i < drivingMeasurements.size(); i++) {
+            toRet[i] = (float) drivingMeasurements.get(i).getAccelerationByAttribute(attribute);
         }
 
         return toRet;
