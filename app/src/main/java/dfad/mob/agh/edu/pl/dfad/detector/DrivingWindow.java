@@ -16,7 +16,10 @@ public class DrivingWindow {
     }
 
     public void addMeasurement(Measurement measurement) {
-        int lastIndex = drivingMeasurements.get(drivingMeasurements.size()-1).getMeasurementIndexInManeuver();
+        int lastIndex = 0;
+        int drivingMeasurementsSize = drivingMeasurements.size();
+        if (drivingMeasurementsSize > 0)
+            lastIndex = drivingMeasurements.get(drivingMeasurementsSize).getMeasurementIndexInManeuver();
         DrivingMeasurement drivingMeasurement = new DrivingMeasurement(++lastIndex, measurement.getXAcc(), measurement.getYAcc(), measurement.getZAcc());
         drivingMeasurements.add(drivingMeasurement);
         if (drivingMeasurements.size() > WINDOW_SIZE)
