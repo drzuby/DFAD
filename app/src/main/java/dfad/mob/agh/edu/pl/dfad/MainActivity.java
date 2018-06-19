@@ -13,8 +13,8 @@ import android.hardware.SensorManager;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.Telephony;
+import android.support.annotation.RequiresApi;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.WindowManager;
@@ -22,20 +22,29 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import com.bosphere.filelogger.FL;
-import com.bosphere.filelogger.FLConfig;
-import com.bosphere.filelogger.FLConst;
-
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import dfad.mob.agh.edu.pl.dfad.camera.FaceDetectionCamera;
 import dfad.mob.agh.edu.pl.dfad.camera.FrontCameraRetriever;
+import dfad.mob.agh.edu.pl.dfad.detector.DriverPatternDetectorService;
+import dfad.mob.agh.edu.pl.dfad.detector.DrivingMeasurement;
+import dfad.mob.agh.edu.pl.dfad.detector.DrivingWindow;
+import dfad.mob.agh.edu.pl.dfad.detector.ManeuverMeasurement;
+import dfad.mob.agh.edu.pl.dfad.detector.ManeuverType;
 import dfad.mob.agh.edu.pl.dfad.gsm.CallsBroadcastReceiver;
 import dfad.mob.agh.edu.pl.dfad.gsm.SmsMmsBroadcastReceiver;
+import dfad.mob.agh.edu.pl.dfad.model.Measurement;
 import dfad.mob.agh.edu.pl.dfad.notification.SoundNotificationService;
 import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
 
@@ -50,6 +59,8 @@ import dfad.mob.agh.edu.pl.dfad.visualization.ActionVisualizer;
 public class MainActivity extends Activity implements FrontCameraRetriever.Listener, FaceDetectionCamera.Listener, SensorEventListener {
 
     private static final String TAG = "FDT" + MainActivity.class.getSimpleName();
+    private static final String RESOURCE1_FILE_NAME = "1stStop.txt";
+    private static final String RESOURCE2_FILE_NAME = "2ndStop.txt";
 
     private SensorManager sensorManager;
     private SmsMmsBroadcastReceiver smsMmsBroadcastReceiver;
@@ -102,19 +113,15 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
     private final float[] orientationAngles = new float[3];
     private final float[] trueAcceleration = new float[4];
 
+    private DrivingWindow drivingWindow = new DrivingWindow();
+    private DriverPatternDetectorService driverPatternDetectorService;
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         assignWidgets();
-
-        FL.init(new FLConfig.Builder(this)
-                .minLevel(FLConst.Level.V)
-                .logToFile(true)
-                .dir(new File(Environment.getExternalStorageDirectory(), "DFAD"))
-                .retentionPolicy(FLConst.RetentionPolicy.FILE_COUNT)
-                .build());
-        FL.setEnabled(true);
 
         keepScreenOnCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -130,6 +137,11 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         registerSmsMmsBroadcastReceiver();
 
         registerCallsBroadcastReceiver();
+
+        try {
+            initializeDetector();
+        } catch (IOException e) {
+        }
 
         // Go get the front facing camera of the device
         // best practice is to do this asynchronously
@@ -201,6 +213,26 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         startActivity(visualizerIntent);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void initializeDetector() throws IOException {
+        Map<ManeuverType, List<ManeuverMeasurement>> trainingData = new HashMap<>();
+        List<DrivingMeasurement> drivingMeasurements1 = new ArrayList<>();
+        List<String> linesTraining1 = loadFromFile(drivingMeasurements1, R.raw.first_stop);
+
+        parseDrivingMeasurement(drivingMeasurements1, linesTraining1);
+
+        List<ManeuverMeasurement> maneuvers = new ArrayList<>();
+        maneuvers.add(new ManeuverMeasurement(ManeuverType.AGGRESIVE_STOP, drivingMeasurements1));
+        trainingData.put(ManeuverType.AGGRESIVE_STOP, maneuvers);
+
+        driverPatternDetectorService = new DriverPatternDetectorService(trainingData);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private boolean isAnomalyDetected() {
+        return driverPatternDetectorService.isAnomalyByRegression(drivingWindow.getDrivingMeasurements()).size() > 0;
+    }
+
     private void assignWidgets() {
         leftEyeTextView = findViewById(R.id.leftEye);
         rightEyeTextView = findViewById(R.id.rightEye);
@@ -242,10 +274,40 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         startService(soundNotificationIntent);
     }
 
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void parseDrivingMeasurement(List<DrivingMeasurement> measurements, List<String> lines) {
+
+        final AtomicInteger indexHolder = new AtomicInteger();
+
+        lines.forEach(l -> {
+            double accX = Double.parseDouble(l.split(";")[0]);
+            double accY = Double.parseDouble(l.split(";")[1]);
+            double accZ = Double.parseDouble(l.split(";")[2]);
+            measurements.add(new DrivingMeasurement(indexHolder.getAndIncrement(), accX, accY, accZ));
+        });
+    }
+
+    private List<String> loadFromFile(List<DrivingMeasurement> drivingMeasurements, int resourceId) throws IOException {
+        InputStream in = getResource(resourceId);
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, Charset.forName(StandardCharsets.UTF_8.name())))) {
+            String line;
+            while ((line = reader.readLine()) != null)
+                lines.add(line);
+        }
+        return lines;
+    }
+
+    private InputStream getResource(int resourceId) {
+        return this.getResources().openRawResource(resourceId);
+    }
+
     @Override
     public void onAccuracyChanged(Sensor arg0, int arg1) {
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
@@ -270,6 +332,7 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         updateTrueAcceleration();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public void updateTrueAcceleration() {
         SensorManager.getRotationMatrix(rotationMatrix, null, gravityReading, magnetometerReading);
         SensorManager.getOrientation(rotationMatrix, orientationAngles);
@@ -284,7 +347,12 @@ public class MainActivity extends Activity implements FrontCameraRetriever.Liste
         yResTextView.setText(String.format(Locale.ENGLISH, "y: %f", trueAcceleration[1]));
         zResTextView.setText(String.format(Locale.ENGLISH, "z: %f", trueAcceleration[2]));
 
-        FL.d("%f\t%f\t%f", trueAcceleration[0], trueAcceleration[1], trueAcceleration[2]);
+        Measurement curMeasurement = new Measurement(trueAcceleration[0], trueAcceleration[1], trueAcceleration[2]);
+        drivingWindow.addMeasurement(curMeasurement);
+
+        if (isAnomalyDetected()) {
+            runSoundNotification();
+        }
     }
 
     @Override
