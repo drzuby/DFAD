@@ -9,8 +9,6 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 
-import com.google.android.gms.common.util.ListUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,9 +132,17 @@ public class DriverPatternDetectorService extends Service {
             double similarityX = computeDifference(drivingMeasurements, maneuverRegressionModel, x);
             double similarityY = computeDifference(drivingMeasurements, maneuverRegressionModel, y);
             double similarityZ = computeDifference(drivingMeasurements, maneuverRegressionModel, z);
+            double modelNorm = modelNorm(maneuverRegressionModel);
 
-            if (threshold(similarityX, similarityY, similarityZ, modelNorm(maneuverRegressionModel))) {
-                ManeuverAnomaly maneuverAnomaly = new ManeuverAnomaly(maneuverType);
+            if (threshold(similarityX, similarityY, similarityZ, modelNorm)) {
+                double threshold = calculateThreshold(modelNorm);
+                double similaritySum = similarityX + similarityY + similarityZ;
+                double sum = threshold + similaritySum;
+
+                double normalizedSimiliaritySum = similaritySum / sum;
+
+                double confidence = 1.0 - normalizedSimiliaritySum;
+                ManeuverAnomaly maneuverAnomaly = new ManeuverAnomaly(maneuverType, confidence);
                 maneuverAnomalies.add(maneuverAnomaly);
             }
         }
